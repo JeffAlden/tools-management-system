@@ -264,7 +264,7 @@ export function BorrowerForm({
               </div>
             </div>
             <hr className="border-slate-100" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="borrower-capture-grid grid grid-cols-1 md:grid-cols-2 gap-6">
               <Photo
                 value={photo}
                 onChange={setPhoto}

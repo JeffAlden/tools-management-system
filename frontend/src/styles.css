@@ -66,6 +66,27 @@ canvas.sig-canvas {
 fieldset { min-width: 0; }
 .responsive-main, .responsive-main .grid > *, .mobile-modal .grid > * { min-width: 0; }
 canvas.sig-canvas { max-width: 100%; display: block; }
+.borrower-capture-grid > div {
+  display: flex;
+  flex-direction: column;
+}
+.borrower-capture-grid > div:last-child > div:last-child {
+  min-height: 140px;
+}
+.borrower-capture-grid .sig-canvas {
+  height: 136px;
+}
+@media (min-width: 768px) {
+  .borrower-capture-grid > div:last-child > div:last-child {
+    margin-top: auto;
+  }
+  .borrower-capture-grid > div:first-child > div:last-child,
+  .borrower-capture-grid > div:last-child > div:last-child {
+    height: 176px;
+    min-height: 176px;
+  }
+  .borrower-capture-grid .sig-canvas { height: 172px; }
+}
 .responsive-main {
   width: min(100%, 80rem);
   padding-inline: clamp(0.75rem, 3vw, 2rem);
