@@ -1,0 +1,286 @@
+import { useEffect, useState, type FormEvent } from "react";
+import { api, session } from "./services/api";
+import { Modal } from "./components/Modal";
+import { BorrowerForm } from "./features/BorrowerForm";
+import { Dashboard } from "./features/Dashboard";
+import { Accounts } from "./features/Management";
+import type { User } from "./types";
+export default function App() {
+  const [user, setUser] = useState<User | null>(null),
+    [tab, setTab] = useState("borrower"),
+    [modal, setModal] = useState(""),
+    [message, setMessage] = useState(""),
+    [ready, setReady] = useState(false),
+    [busy, setBusy] = useState(false);
+  useEffect(() => {
+    session()
+      .then((s) => {
+        setUser(s.user);
+        setReady(true);
+      })
+      .catch((e) => setMessage("Unable to connect to the API: " + e.message));
+  }, []);
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => setMessage(""), 10000);
+    return () => clearTimeout(timer);
+  }, [message]);
+  async function login(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const values = new FormData(e.currentTarget);
+    setBusy(true);
+    try {
+      const result = await api<{ user: User }>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify(Object.fromEntries(values)),
+      });
+      setUser(result.user);
+      setModal("");
+      setMessage(`Welcome back ${result.user.name}!`);
+    } catch (e) {
+      setMessage((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function logout() {
+    try {
+      await api("/auth/logout", { method: "POST" });
+      setUser(null);
+      setTab("borrower");
+      setModal("");
+      setMessage("Logged out.");
+    } catch (e) {
+      setMessage((e as Error).message);
+    }
+  }
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="app-header text-white shadow-lg sticky top-0 z-30 bg-[#002366]">
+        <div className="nav-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <img
+            src="/assets/altech-logo.png"
+            alt="ALTECH - Your Key to Automation"
+            className="brand-logo h-12 w-auto object-contain max-w-[230px]"
+          />
+          <div className="nav-controls flex items-center gap-2 sm:gap-3">
+            <div className="tab-switcher bg-slate-800 p-1 rounded-xl flex items-center gap-1 border border-slate-700">
+              {[
+                {
+                  key: "borrower",
+                  label: "Borrower Request",
+                  icon: "file-pen",
+                },
+                {
+                  key: "dashboard",
+                  label:
+                    user?.role === "User" ? "My Requests" : "Tools Dashboard",
+                  icon: "chart-line",
+                },
+              ].map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  aria-label={t.label}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${tab === t.key ? "bg-indigo-600 text-white shadow-sm" : "text-slate-300 hover:text-white"}`}
+                >
+                  <i className={"fas fa-" + t.icon} />
+                  <span className="hidden sm:inline">{t.label}</span>
+                </button>
+              ))}
+            </div>
+            {user ? (
+              <div className="flex items-center gap-2">
+                {user.role === "Developer" && (
+                  <button
+                    className="nav-button text-amber-300"
+                    onClick={() => setModal("users")}
+                    aria-label="Manage users"
+                  >
+                    <i className="fas fa-user-shield" />
+                    <span className="hidden md:inline ml-1">Users</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setModal("password")}
+                  className="nav-button text-emerald-300"
+                  title="Change password"
+                >
+                  {user.name} ({user.role})
+                </button>
+                <button
+                  className="nav-button text-rose-300"
+                  onClick={logout}
+                  aria-label="Logout"
+                >
+                  <i className="fas fa-right-from-bracket" />
+                  <span className="hidden sm:inline ml-1">Logout</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                className="nav-button"
+                disabled={!ready}
+                onClick={() => setModal("login")}
+              >
+                <i className="fas fa-lock mr-1" />
+                Sign In
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+      <main className="responsive-main max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+        {!ready && (
+          <div className="bg-white rounded-xl p-3 mb-4 text-xs" role="status">
+            Connecting to the server…{" "}
+            <button
+              className="text-indigo-600"
+              onClick={() =>
+                session()
+                  .then((s) => {
+                    setUser(s.user);
+                    setReady(true);
+                  })
+                  .catch((e) => setMessage(e.message))
+              }
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {tab === "borrower" ? (
+          <BorrowerForm
+            user={user}
+            login={() => setModal("login")}
+            notify={setMessage}
+            onSubmitted={() => {}}
+          />
+        ) : user ? (
+          <Dashboard key={user.id} user={user} notify={setMessage} />
+        ) : (
+          <div className="bg-slate-900/20 backdrop-blur-sm border border-white/20 rounded-2xl p-8 text-center max-w-lg mx-auto shadow-2xl">
+            <i className="fas fa-user-lock text-amber-400 text-3xl mb-3" />
+            <h3 className="font-bold text-white text-base">
+              Authentication Required
+            </h3>
+            <p className="text-xs text-slate-200 mt-1 mb-5">
+              Please log in with your credentials to access your authorized
+              requests and tools dashboard.
+            </p>
+            <button className="btn-primary" onClick={() => setModal("login")}>
+              Login in
+            </button>
+          </div>
+        )}
+      </main>
+      <footer className="mt-auto py-4 text-center text-xs font-medium text-white bg-[#002366]">
+        © Copyright 2026 - IT Jeff | Eric C. the Pogi
+      </footer>
+      {message && (
+        <div
+          role="status"
+          className="fixed bottom-5 right-5 left-5 sm:left-auto z-[100] bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs border border-slate-700 max-w-xl flex gap-3"
+        >
+          <span className="break-words">{message}</span>
+          <button
+            aria-label="Dismiss notification"
+            onClick={() => setMessage("")}
+          >
+            ×
+          </button>
+        </div>
+      )}
+      {modal === "login" && (
+        <Modal title="Portal Sign In" onClose={() => setModal("")}>
+          <form onSubmit={login} className="space-y-4">
+            <label className="field-label">
+              Username
+              <input
+                className="input mt-1"
+                name="username"
+                required
+                autoComplete="username"
+                maxLength={64}
+              />
+            </label>
+            <label className="field-label">
+              Password
+              <input
+                className="input mt-1"
+                name="password"
+                required
+                type="password"
+                autoComplete="current-password"
+                maxLength={128}
+              />
+            </label>
+            <button className="btn-primary w-full" disabled={busy || !ready}>
+              {busy ? "Signing in…" : "Sign In"}
+            </button>
+          </form>
+        </Modal>
+      )}
+      {modal === "users" && user?.role === "Developer" && (
+        <Accounts
+          current={user}
+          notify={setMessage}
+          onClose={() => setModal("")}
+        />
+      )}{" "}
+      {modal === "password" && user && (
+        <Modal title="Change Password" onClose={() => setModal("")}>
+          <form
+            className="space-y-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const values = new FormData(e.currentTarget);
+              setBusy(true);
+              try {
+                await api("/auth/password", {
+                  method: "POST",
+                  body: JSON.stringify(Object.fromEntries(values)),
+                });
+                setModal("");
+                setMessage("Password changed; other sessions revoked.");
+              } catch (e) {
+                setMessage((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <label className="field-label">
+              Current password
+              <input
+                name="currentPassword"
+                className="input"
+                type="password"
+                required
+                autoComplete="current-password"
+              />
+            </label>
+            <label className="field-label">
+              New password
+              <input
+                name="newPassword"
+                className="input"
+                type="password"
+                required
+                minLength={12}
+                maxLength={128}
+                autoComplete="new-password"
+              />
+            </label>
+            <p className="text-xs text-slate-500">
+              12–128 characters with uppercase, lowercase, number and symbol.
+            </p>
+            <button className="btn-primary" disabled={busy}>
+              Change Password
+            </button>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,21 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY frontend/package.json frontend/package.json
+COPY backend/package.json backend/package.json
+RUN npm ci
+COPY backend backend
+COPY database database
+RUN npm run build -w backend
+RUN npm prune --omit=dev
+FROM node:24-bookworm-slim
+ENV NODE_ENV=production PORT=3001 UPLOAD_DIR=/app/uploads
+WORKDIR /app
+COPY --from=build --chown=node:node /app/node_modules node_modules
+COPY --from=build --chown=node:node /app/backend/dist backend/dist
+COPY --from=build --chown=node:node /app/backend/package.json backend/package.json
+COPY --from=build --chown=node:node /app/database database
+RUN mkdir -p /app/uploads && chown node:node /app/uploads
+USER node
+EXPOSE 3001
+CMD ["node","backend/dist/server.js"]

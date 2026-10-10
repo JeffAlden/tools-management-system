@@ -1,0 +1,39 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.api
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      NODE_ENV: production
+      UPLOAD_DIR: /app/uploads
+      TRUST_PROXY: '1'
+    volumes:
+      - uploads:/app/uploads
+      - ${MYSQL_CA_FILE:?Set MYSQL_CA_FILE}:/run/mysql-ca.pem:ro
+    expose: ['3001']
+    healthcheck:
+      test: ['CMD','node','-e',"fetch('http://127.0.0.1:3001/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    security_opt: ['no-new-privileges:true']
+  web:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.web
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN}
+    ports: ['80:80','443:443']
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+volumes:
+  uploads:
+  caddy_data:
+  caddy_config:

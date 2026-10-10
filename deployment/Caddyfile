@@ -1,0 +1,25 @@
+{$DOMAIN} {
+ log {
+  output stdout
+  format json
+ }
+ encode gzip
+ header {
+  Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+  X-Content-Type-Options nosniff
+  Referrer-Policy same-origin
+  Permissions-Policy "camera=(self), microphone=()"
+  Strict-Transport-Security "max-age=31536000"
+ }
+ handle /api/* {
+  request_body {
+   max_size 11MB
+  }
+  reverse_proxy api:3001
+ }
+ handle {
+  root * /srv
+  try_files {path} /index.html
+  file_server
+ }
+}

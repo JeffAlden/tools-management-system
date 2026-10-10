@@ -1,0 +1,459 @@
+import { useEffect, useState } from "react";
+import QRCode from "qrcode";
+import { Modal } from "../components/Modal";
+import { api, report } from "../services/api";
+import { formatDate, localDate } from "../utils/date";
+import { RequestDetail } from "./RequestDetail";
+import { Catalog } from "./Management";
+import type { BorrowRequest, Log, User } from "../types";
+export function Dashboard({
+  user,
+  notify,
+}: {
+  user: User;
+  notify: (message: string) => void;
+}) {
+  const [requests, setRequests] = useState<BorrowRequest[]>([]),
+    [loading, setLoading] = useState(true),
+    [search, setSearch] = useState(""),
+    [when, setWhen] = useState(""),
+    [status, setStatus] = useState("all"),
+    [selected, setSelected] = useState<BorrowRequest | null>(null),
+    [modal, setModal] = useState(""),
+    [qr, setQr] = useState(""),
+    [logs, setLogs] = useState<Log[]>([]),
+    [logSearch, setLogSearch] = useState(""),
+    [logDate, setLogDate] = useState(""),
+    [logDetail, setLogDetail] = useState<Log | null>(null);
+  const admin = user.role !== "User";
+  async function reload() {
+    try {
+      setRequests(await api<BorrowRequest[]>("/requests"));
+    } catch (e) {
+      notify((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    void reload();
+    const timer = setInterval(() => void reload(), 30000);
+    return () => clearInterval(timer);
+  }, [user.id]);
+  async function inspect(id: string) {
+    try {
+      setSelected(await api<BorrowRequest>("/requests/" + id));
+    } catch (e) {
+      notify((e as Error).message);
+    }
+  }
+  async function open(which: string) {
+    try {
+      if (which === "qr")
+        setQr(
+          await QRCode.toDataURL(window.location.origin + "/", {
+            width: 200,
+            margin: 1,
+          }),
+        );
+      if (which === "logs") setLogs(await api<Log[]>("/logs"));
+      setModal(which);
+    } catch (e) {
+      notify((e as Error).message);
+    }
+  }
+  const filtered = requests.filter(
+    (r) =>
+      [
+        r.borrower_name,
+        r.reference,
+        r.plate,
+        ...r.items.map((i) => i.name),
+      ].some((v) => v.toLowerCase().includes(search.toLowerCase())) &&
+      (!when || localDate(r.request_date) === when) &&
+      (status === "all" || r.status === status),
+  );
+  const exportReport = (kind: string) =>
+    report(kind).catch((e) => notify(e.message));
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          {
+            label: "Total Requests",
+            count: requests.length,
+            icon: "folder-open",
+            color: "blue",
+          },
+          {
+            label: "Pending Review",
+            count: requests.filter((r) => r.status === "Pending Approval")
+              .length,
+            icon: "hourglass-half",
+            color: "amber",
+          },
+          {
+            label: "Currently Borrowed",
+            count: requests.filter((r) => r.status === "Issued").length,
+            icon: "hand-holding-hand",
+            color: "indigo",
+          },
+          {
+            label: "Returned & Closed",
+            count: requests.filter((r) => r.status === "Completed").length,
+            icon: "circle-check",
+            color: "emerald",
+          },
+        ].map((k) => (
+          <div
+            key={k.label}
+            className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between"
+          >
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                {k.label}
+              </p>
+              <p className="text-2xl font-black mt-0.5">{k.count}</p>
+            </div>
+            <div className={`kpi-${k.color} p-3 rounded-xl`}>
+              <i className={`fas fa-${k.icon} text-lg`} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="dashboard-actions bg-white p-4 rounded-xl border shadow-sm flex flex-col gap-4">
+        <div className="flex flex-wrap gap-2">
+          <button className="btn-secondary" onClick={() => open("qr")}>
+            <i className="fas fa-qrcode mr-1" />
+            Generate QR
+          </button>
+          {admin && (
+            <>
+              <button
+                className="btn-primary bg-emerald-600"
+                onClick={() => exportReport("requests")}
+              >
+                Export Borrow Reports
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={() => open("borrower-tools")}
+              >
+                Borrower Added Tools
+              </button>
+              <button className="btn-secondary" onClick={() => open("catalog")}>
+                Tools Catalog
+              </button>
+              <button
+                className="btn-primary bg-purple-600"
+                onClick={() => open("logs")}
+              >
+                Activity Logs
+              </button>
+            </>
+          )}
+          <button className="btn-secondary" onClick={() => reload()}>
+            Refresh
+          </button>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            className="input sm:max-w-xs"
+            aria-label="Search requests"
+            placeholder="Search borrower, tool, plate..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <input
+            type="date"
+            aria-label="Filter requests by date"
+            className="input sm:w-auto"
+            value={when}
+            onChange={(e) => setWhen(e.target.value)}
+          />
+          <select
+            className="input sm:w-auto"
+            aria-label="Filter requests by status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <option value="all">All Status</option>
+            <option>Pending Approval</option>
+            <option value="Issued">Currently Issued</option>
+            <option value="Completed">Completed / Returned</option>
+          </select>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b bg-slate-50 flex justify-between gap-2">
+          <h3 className="font-bold text-sm">
+            <i className="fas fa-list-check text-indigo-600 mr-2" />
+            {admin
+              ? "Equipment Borrow Requests & Returns Log"
+              : "My Borrow Requests & Returns Log"}
+          </h3>
+          <span className="text-xs text-slate-400">Updates every 30s</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                {[
+                  "Req ID / Date",
+                  "Borrower Details",
+                  "Items Summary",
+                  "Handover & Return Admin",
+                  "Status",
+                  "Action",
+                ].map((h) => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r) => (
+                <tr key={r.id}>
+                  <td className="font-mono max-w-56 break-all">
+                    <b>{r.reference}</b>
+                    <p className="text-[10px] text-slate-400">
+                      {formatDate(r.request_date)}
+                    </p>
+                  </td>
+                  <td>
+                    <b>{r.borrower_name}</b>
+                    <p className="text-[11px] text-slate-500">
+                      {r.position} • {r.plate}
+                    </p>
+                  </td>
+                  <td>
+                    {r.items.map((i) => (
+                      <span className="badge inline-block mr-1 mb-1" key={i.id}>
+                        {i.name} ({i.returned_qty}/{i.requested_qty} ret)
+                      </span>
+                    ))}
+                  </td>
+                  <td>
+                    Rel: {r.released_name || "-"}
+                    <br />
+                    Rec: {r.received_name || "-"}
+                  </td>
+                  <td>
+                    <span
+                      className={`badge ${r.status === "Completed" ? "bg-emerald-100 text-emerald-800" : r.status === "Issued" ? "bg-indigo-100 text-indigo-800" : "bg-amber-100 text-amber-800"}`}
+                    >
+                      {r.status}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      className="btn-secondary whitespace-nowrap"
+                      onClick={() => inspect(r.id)}
+                    >
+                      {admin && r.status === "Issued"
+                        ? "Process Return"
+                        : admin
+                          ? "Inspect / Process"
+                          : "View Request"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!filtered.length && (
+            <p className="empty">
+              {loading
+                ? "Loading requests…"
+                : "No equipment request records found."}
+            </p>
+          )}
+        </div>
+      </div>
+      {selected && (
+        <RequestDetail
+          request={selected}
+          user={user}
+          notify={notify}
+          onClose={() => setSelected(null)}
+          onSaved={() => reload()}
+        />
+      )}{" "}
+      {modal === "catalog" && (
+        <Catalog notify={notify} onClose={() => setModal("")} />
+      )}{" "}
+      {modal === "qr" && (
+        <Modal
+          title="Borrower Form Access QR Code"
+          onClose={() => setModal("")}
+        >
+          <img alt="Borrower form QR code" src={qr} className="mx-auto" />
+          <p className="text-xs text-slate-500">
+            Scan QR with mobile device to open borrower loan form instantly.
+          </p>
+          <input
+            readOnly
+            className="input"
+            aria-label="Borrower form link"
+            value={window.location.origin + "/"}
+          />
+          <button
+            className="btn-primary"
+            onClick={() =>
+              navigator.clipboard
+                .writeText(window.location.origin + "/")
+                .then(() => notify("Borrower link copied."))
+                .catch(() => notify("Select and copy the link."))
+            }
+          >
+            Copy
+          </button>
+        </Modal>
+      )}{" "}
+      {modal === "borrower-tools" && (
+        <Modal
+          wide
+          title="Tools Added by Borrowers"
+          onClose={() => setModal("")}
+        >
+          <button
+            className="btn-primary"
+            onClick={() => exportReport("borrower-tools")}
+          >
+            Export Tools
+          </button>
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  {[
+                    "Request",
+                    "Borrower",
+                    "Tool / Item",
+                    "Requested",
+                    "Returned",
+                    "Return Status",
+                    "Notes / Specification",
+                  ].map((h) => (
+                    <th key={h}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {requests.flatMap((r) =>
+                  r.items.map((i) => (
+                    <tr key={i.id}>
+                      <td>{r.reference}</td>
+                      <td>{r.borrower_name}</td>
+                      <td>{i.name}</td>
+                      <td>{i.requested_qty}</td>
+                      <td>{i.returned_qty}</td>
+                      <td>{i.return_status}</td>
+                      <td>{i.note}</td>
+                    </tr>
+                  )),
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Modal>
+      )}{" "}
+      {modal === "logs" && (
+        <Modal
+          wide
+          title="System Activity & Audit Logs"
+          onClose={() => setModal("")}
+        >
+          <div className="flex flex-wrap gap-2">
+            <input
+              className="input sm:w-80"
+              placeholder="Search logs by action, user, or details..."
+              aria-label="Search logs"
+              value={logSearch}
+              onChange={(e) => setLogSearch(e.target.value)}
+            />
+            <input
+              type="date"
+              className="input w-auto"
+              aria-label="Filter logs by date"
+              value={logDate}
+              onChange={(e) => setLogDate(e.target.value)}
+            />
+            <button
+              className="btn-primary"
+              onClick={() => exportReport("logs")}
+            >
+              Export Logs
+            </button>
+          </div>
+          <p className="text-xs text-slate-500">
+            Latest 5,000 entries. Export includes all authorized logs.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  {[
+                    "Timestamp",
+                    "User",
+                    "Action Category",
+                    "Detailed Log Description",
+                    "Action",
+                  ].map((h) => (
+                    <th key={h}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {logs
+                  .filter(
+                    (l) =>
+                      `${l.action} ${l.actor} ${l.details}`
+                        .toLowerCase()
+                        .includes(logSearch.toLowerCase()) &&
+                      (!logDate || localDate(l.created_at) === logDate),
+                  )
+                  .map((l) => (
+                    <tr key={l.id}>
+                      <td>{formatDate(l.created_at)}</td>
+                      <td>{l.actor}</td>
+                      <td>{l.action}</td>
+                      <td>{l.details}</td>
+                      <td>
+                        <button
+                          className="btn-secondary"
+                          onClick={() => setLogDetail(l)}
+                        >
+                          Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </Modal>
+      )}
+      {logDetail && (
+        <Modal title="Activity Log Details" onClose={() => setLogDetail(null)}>
+          <p className="text-xs">
+            {formatDate(logDetail.created_at)} — {logDetail.actor}
+          </p>
+          <h4 className="font-bold">{logDetail.action}</h4>
+          <p className="text-sm">{logDetail.details}</p>
+          {logDetail.request_id && (
+            <button
+              className="btn-primary"
+              onClick={() => {
+                void inspect(logDetail.request_id!);
+                setLogDetail(null);
+                setModal("");
+              }}
+            >
+              Inspect Associated Request
+            </button>
+          )}
+        </Modal>
+      )}
+    </div>
+  );
+}

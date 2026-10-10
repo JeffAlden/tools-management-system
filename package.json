@@ -1,0 +1,28 @@
+{
+  "name": "altech-tools-management",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build -w frontend && npm run build -w backend",
+    "test": "npm run test -w backend",
+    "test:integration": "npm run test:integration -w backend",
+    "db:migrate": "npm run migrate -w backend",
+    "db:setup": "npm run setup -w backend",
+    "format": "prettier --write frontend/src backend/src backend/test frontend/vite.config.ts frontend/postcss.config.js package.json frontend/package.json backend/package.json"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "^3.6.2"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

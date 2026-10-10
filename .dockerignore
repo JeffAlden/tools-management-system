@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.env
+.env.*
+uploads
+backups
+.local
+tools_management_system.html
+note.html
+docs/screenshots

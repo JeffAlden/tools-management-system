@@ -1,0 +1,187 @@
+@import "tailwindcss";
+/* Retain the original Tailwind 3 palette while using the maintained compiler. */
+@theme {
+  --color-indigo-50: #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-200: #c7d2fe;
+  --color-indigo-300: #a5b4fc;
+  --color-indigo-400: #818cf8;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+  --color-indigo-800: #3730a3;
+  --color-indigo-900: #312e81;
+  --color-indigo-950: #1e1b4b;
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-600: #059669;
+  --color-emerald-800: #065f46;
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-600: #d97706;
+  --color-amber-800: #92400e;
+  --color-rose-300: #fda4af;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-purple-600: #9333ea;
+}
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-slate-200);
+  }
+}
+body {
+  font-family: "Inter", sans-serif;
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.4)),
+    url("/assets/company-scaled-1.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: #1e293b;
+}
+canvas.sig-canvas {
+  touch-action: none;
+  background: #fff;
+  cursor: crosshair;
+}
+.responsive-main {
+  width: min(100%, 80rem);
+  padding-inline: clamp(0.75rem, 3vw, 2rem);
+}
+@layer components {
+  .input {
+    @apply w-full px-3 py-2 border border-slate-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white disabled:bg-slate-100;
+  }
+  .field-label {
+    @apply block text-xs font-semibold text-slate-700;
+  }
+  .section-title {
+    @apply text-xs font-bold text-slate-500 uppercase tracking-wider;
+  }
+  .btn-primary {
+    @apply px-4 py-2 bg-indigo-600 hover:brightness-95 text-white rounded-lg text-xs font-semibold shadow-sm disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold disabled:opacity-50;
+  }
+  .nav-button {
+    @apply px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20;
+  }
+  .badge {
+    @apply px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-semibold;
+  }
+  .data-table {
+    @apply w-full text-left text-xs border-collapse;
+  }
+  .data-table th {
+    @apply bg-slate-100 text-slate-700 uppercase font-bold text-[10px] p-2.5;
+  }
+  .data-table td {
+    @apply p-3 border-b border-slate-100;
+  }
+  .data-table tbody tr:hover {
+    @apply bg-slate-50;
+  }
+  .empty {
+    @apply p-8 text-center text-xs font-semibold text-slate-400;
+  }
+  .kpi-blue {
+    @apply bg-blue-50 text-blue-600;
+  }
+  .kpi-amber {
+    @apply bg-amber-50 text-amber-600;
+  }
+  .kpi-indigo {
+    @apply bg-indigo-50 text-indigo-600;
+  }
+  .kpi-emerald {
+    @apply bg-emerald-50 text-emerald-600;
+  }
+}
+@media (max-width: 640px) {
+  body {
+    overflow-x: hidden;
+  }
+  .app-header .nav-inner {
+    height: auto;
+    min-height: 4rem;
+    padding-block: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .app-header .brand-logo {
+    height: 2.25rem;
+    max-width: 150px;
+  }
+  .app-header .nav-controls {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .app-header .tab-switcher {
+    flex: 1;
+    justify-content: center;
+  }
+  .responsive-main {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  .form-hero,
+  .form-actions,
+  .dashboard-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .form-hero > div:last-child {
+    text-align: left;
+    margin-top: 0.75rem;
+    max-width: none;
+  }
+  .form-actions > button {
+    width: 100%;
+  }
+  .form-actions {
+    gap: 0.5rem;
+  }
+  .mobile-modal {
+    padding: 0.5rem;
+  }
+  .mobile-modal > div {
+    max-height: calc(100dvh - 1rem);
+    border-radius: 1rem;
+  }
+  .mobile-modal .p-6 {
+    padding: 1rem;
+  }
+  footer {
+    font-size: 0.7rem;
+  }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .app-header .nav-inner {
+    gap: 0.75rem;
+  }
+  .app-header .brand-logo {
+    max-width: 180px;
+  }
+}
