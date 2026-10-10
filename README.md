@@ -6,13 +6,37 @@ Read [source inspection and behavior decisions](docs/inspection.md), [deployment
 
 ## Current local preview
 
-The preview is running at http://localhost:5173 with a separate, loopback-only MariaDB compatibility instance on port 3307. It contains exactly one Developer account and no tools, requests or attachments. Production targets MySQL 8.4; that engine and cloud deployment still need validation. Runtime settings are in the ignored .env file. The generated initial password is encrypted with Windows DPAPI for the current Windows user; reveal it privately by running:
+The preview is running at http://localhost:5173 and now uses altech_tms in your XAMPP/phpMyAdmin database server at 127.0.0.1:3306 (MariaDB 10.4.28), with a separate application database account. It was initialized with exactly one Developer account and no tools, requests or attachments. Production targets MySQL 8.4; that engine and cloud deployment still need validation. Runtime settings are in the ignored .env file. The generated initial password is encrypted with Windows DPAPI for the current Windows user; reveal it privately by running from the project folder:
 
 ```powershell
 .\.local\show-first-login.ps1
 ```
 
 Username: developer. Change the password after first login. No password is included in source or the public app. The .local scripts/data are temporary machine-specific preview artifacts and are excluded from Git. A fresh checkout uses the setup procedure below with your own MySQL and initial-account credentials.
+
+If PowerShell blocks the local password-display script, run `powershell -NoProfile -ExecutionPolicy Bypass -File .\.local\show-first-login.ps1` from the project folder. This applies only to that process. The encrypted file works only under the Windows user on this computer that created it; it is not the setup method for another computer.
+
+### Initial Developer on another computer
+
+For a new empty database, copy .env.example to .env and configure MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER and MYSQL_PASSWORD for that database. The MySQL password is separate from the Developer login password. Create the empty database and its scoped database user before migration.
+
+After `npm ci`, run `npm run db:migrate`. Then choose your Developer credentials using a private PowerShell prompt:
+
+```powershell
+$env:SETUP_USERNAME = 'developer'
+$env:SETUP_NAME = 'Developer'
+$taskSetupSecret = Read-Host 'Choose a new Developer password' -AsSecureString
+try {
+  $env:SETUP_PASSWORD = [Net.NetworkCredential]::new('', $taskSetupSecret).Password
+  npm run db:setup
+} finally {
+  Remove-Item Env:SETUP_PASSWORD, Env:SETUP_USERNAME, Env:SETUP_NAME -ErrorAction SilentlyContinue
+  $taskSetupSecret = $null
+}
+npm run dev
+```
+
+Choose 12–128 characters including uppercase, lowercase, a number and a symbol; save it in your password manager. The script hashes it with Argon2id and stores only the hash. Setup refuses to run when any user already exists and cannot reset an existing account. A restored database retains its existing accounts/passwords, so do not run setup after restoring a backup. To let another computer access the same shared records, connect it to the existing deployed application rather than initializing a separate database.
 
 ## Local setup (PowerShell)
 
