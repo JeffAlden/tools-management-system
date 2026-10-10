@@ -63,6 +63,9 @@ canvas.sig-canvas {
   background: #fff;
   cursor: crosshair;
 }
+fieldset { min-width: 0; }
+.responsive-main, .responsive-main .grid > *, .mobile-modal .grid > * { min-width: 0; }
+canvas.sig-canvas { max-width: 100%; display: block; }
 .responsive-main {
   width: min(100%, 80rem);
   padding-inline: clamp(0.75rem, 3vw, 2rem);
@@ -131,15 +134,16 @@ canvas.sig-canvas {
   .app-header .brand-logo {
     height: 2.25rem;
     max-width: 150px;
+    margin-inline: auto;
   }
   .app-header .nav-controls {
     width: 100%;
-    justify-content: space-between;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 0.5rem;
   }
   .app-header .tab-switcher {
-    flex: 1;
+    flex: 0 1 auto;
     justify-content: center;
   }
   .responsive-main {
@@ -176,6 +180,16 @@ canvas.sig-canvas {
   footer {
     font-size: 0.7rem;
   }
+  .request-records, .request-records tbody { display: block; }
+  .request-records thead { display: none; }
+  .request-records tbody { padding: 0.75rem; }
+  .request-records tr { display: block; border: 1px solid #e2e8f0; border-radius: 0.75rem; margin-bottom: 0.75rem; overflow: hidden; background: white; }
+  .request-records td { display: block; max-width: none; padding: 0.65rem 0.85rem; overflow-wrap: anywhere; }
+  .request-records td::before { content: attr(data-label); display: block; font-family: Inter, sans-serif; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.3rem; }
+  .request-records td:first-child { background: #f8fafc; word-break: normal; }
+  .request-records td:last-child { text-align: center; border-bottom: none; }
+  .request-records td:last-child button { width: 100%; min-height: 2.75rem; }
+  .dashboard-actions button { min-height: 2.5rem; }
 }
 @media (min-width: 641px) and (max-width: 1024px) {
   .app-header .nav-inner {

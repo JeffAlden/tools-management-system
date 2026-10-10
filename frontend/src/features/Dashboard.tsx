@@ -123,7 +123,7 @@ export function Dashboard({
         ))}
       </div>
       <div className="dashboard-actions bg-white p-4 rounded-xl border shadow-sm flex flex-col gap-4">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           <button className="btn-secondary" onClick={() => open("qr")}>
             <i className="fas fa-qrcode mr-1" />
             Generate QR
@@ -157,7 +157,7 @@ export function Dashboard({
             Refresh
           </button>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row justify-center gap-2">
           <input
             className="input sm:max-w-xs"
             aria-label="Search requests"
@@ -196,7 +196,7 @@ export function Dashboard({
           <span className="text-xs text-slate-400">Updates every 30s</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="data-table">
+          <table className="data-table request-records">
             <thead>
               <tr>
                 {[
@@ -214,38 +214,38 @@ export function Dashboard({
             <tbody>
               {filtered.map((r) => (
                 <tr key={r.id}>
-                  <td className="font-mono max-w-56 break-all">
+                  <td data-label="Reference / Date" className="font-mono max-w-56 break-all">
                     <b>{r.reference}</b>
                     <p className="text-[10px] text-slate-400">
                       {formatDate(r.request_date)}
                     </p>
                   </td>
-                  <td>
+                  <td data-label="Borrower">
                     <b>{r.borrower_name}</b>
                     <p className="text-[11px] text-slate-500">
                       {r.position} • {r.plate}
                     </p>
                   </td>
-                  <td>
+                  <td data-label="Tools">
                     {r.items.map((i) => (
                       <span className="badge inline-block mr-1 mb-1" key={i.id}>
                         {i.name} ({i.returned_qty}/{i.requested_qty} ret)
                       </span>
                     ))}
                   </td>
-                  <td>
+                  <td data-label="Handover / Return">
                     Rel: {r.released_name || "-"}
                     <br />
                     Rec: {r.received_name || "-"}
                   </td>
-                  <td>
+                  <td data-label="Status">
                     <span
                       className={`badge ${r.status === "Completed" ? "bg-emerald-100 text-emerald-800" : r.status === "Issued" ? "bg-indigo-100 text-indigo-800" : "bg-amber-100 text-amber-800"}`}
                     >
                       {r.status}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Action">
                     <button
                       className="btn-secondary whitespace-nowrap"
                       onClick={() => inspect(r.id)}
@@ -362,9 +362,10 @@ export function Dashboard({
         <Modal
           wide
           title="System Activity & Audit Logs"
+          centered
           onClose={() => setModal("")}
         >
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             <input
               className="input sm:w-80"
               placeholder="Search logs by action, user, or details..."

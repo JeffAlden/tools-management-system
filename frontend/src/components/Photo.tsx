@@ -39,7 +39,7 @@ export function Photo({
         <i className="fas fa-camera text-indigo-600 mr-1" />
         {label}
       </label>
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex flex-col sm:flex-row items-stretch gap-2 mb-3">
         <button
           type="button"
           onClick={() => setCamera(true)}
