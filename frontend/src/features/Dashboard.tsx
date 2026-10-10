@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Modal } from "../components/Modal";
+import { ActivityLogDetail } from "../components/ActivityLogDetail";
 import { api, report } from "../services/api";
 import { formatDate, localDate } from "../utils/date";
 import { RequestDetail } from "./RequestDetail";
@@ -434,25 +435,7 @@ export function Dashboard({
         </Modal>
       )}
       {logDetail && (
-        <Modal title="Activity Log Details" onClose={() => setLogDetail(null)}>
-          <p className="text-xs">
-            {formatDate(logDetail.created_at)} — {logDetail.actor}
-          </p>
-          <h4 className="font-bold">{logDetail.action}</h4>
-          <p className="text-sm">{logDetail.details}</p>
-          {logDetail.request_id && (
-            <button
-              className="btn-primary"
-              onClick={() => {
-                void inspect(logDetail.request_id!);
-                setLogDetail(null);
-                setModal("");
-              }}
-            >
-              Inspect Associated Request
-            </button>
-          )}
-        </Modal>
+        <ActivityLogDetail key={logDetail.id} log={logDetail} onClose={()=>setLogDetail(null)} onInspect={(id)=>{void inspect(id);setLogDetail(null);setModal("");}} />
       )}
     </div>
   );

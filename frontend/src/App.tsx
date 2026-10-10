@@ -117,16 +117,7 @@ export default function App() {
                   <span className="hidden sm:inline ml-1">Logout</span>
                 </button>
               </div>
-            ) : (
-              <button
-                className="nav-button"
-                disabled={!ready}
-                onClick={() => setModal("login")}
-              >
-                <i className="fas fa-lock mr-1" />
-                Sign In
-              </button>
-            )}
+            ) : null}
           </div>
         </div>
       </header>

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { randomUUID } from "node:crypto";
+import { randomUUID, randomInt } from "node:crypto";
 import path from "node:path";
 import rateLimit from "express-rate-limit";
 import { pool, rows, transaction } from "../repositories/db.js";
@@ -56,18 +56,26 @@ requestsRouter.post(
     const requestId = randomUUID();
     try {
       await transaction(async (db) => {
-        await db.execute(
+        for (let attempt = 0; ; attempt++) {
+          try {
+            await db.execute(
           "INSERT INTO borrow_requests(id,reference,user_id,borrower_name,position,plate,request_date) VALUES(?,?,?,?,?,?,?)",
           [
             requestId,
-            "REQ-" + requestId,
+            "REQ" + randomInt(100000, 1000000),
             req.user!.id,
             input.borrowerName,
             input.position,
             input.plate,
             new Date(input.requestDate),
           ],
-        );
+            );
+            break;
+          } catch (error) {
+            if ((error as { code?: string }).code !== "ER_DUP_ENTRY" || attempt >= 19)
+              throw error;
+          }
+        }
         for (const item of input.items)
           await db.execute(
             "INSERT INTO borrow_request_items(id,request_id,name,requested_qty,note) VALUES(?,?,?,?,?)",

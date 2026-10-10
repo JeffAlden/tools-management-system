@@ -203,6 +203,7 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
     })
     .expect(201);
   const request = created.body;
+  assert.match(request.reference, /^REQ\d{6}$/);
   requestIds.push(request.id);
   assert.equal(request.status, "Pending Approval");
   assert.equal(
