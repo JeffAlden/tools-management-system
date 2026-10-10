@@ -113,17 +113,20 @@ toolsRouter.post("/import", async (req, res) => {
   res.json({ count: input.tools.length });
 });
 export const usersRouter = Router();
-usersRouter.use(roles("Developer"));
-usersRouter.get("/", async (_req, res) =>
+usersRouter.use(roles("Admin", "Developer"));
+usersRouter.get("/", async (req, res) =>
   res.json(
     await rows(
       pool,
-      "SELECT id,username,name,role,active,created_at FROM users ORDER BY username",
+      `SELECT id,username,name,role,active,created_at FROM users ${req.user!.role === "Admin" ? "WHERE role IN ('Admin','User')" : ""} ORDER BY username`,
     ),
   ),
 );
 usersRouter.post("/", async (req, res) => {
-  const input = account.parse(req.body),
+  const input = account.parse(req.body);
+  if (req.user!.role === "Admin" && input.role !== "User")
+    throw new HttpError(403, "Admins may create Regular User accounts only.");
+  const
     userId = randomUUID(),
     hash = await argon2.hash(input.password, {
       type: argon2.argon2id,
@@ -145,7 +148,7 @@ usersRouter.post("/", async (req, res) => {
   });
   res.status(201).json({ id: userId });
 });
-usersRouter.patch("/:id", async (req, res) => {
+usersRouter.patch("/:id", roles("Developer"), async (req, res) => {
   const userId = id.parse(req.params.id),
     input = accountUpdate.parse(req.body);
   if (userId === req.user!.id && (!input.active || input.role !== "Developer"))
@@ -174,7 +177,7 @@ usersRouter.patch("/:id", async (req, res) => {
   });
   res.json({ ok: true });
 });
-usersRouter.post("/:id/password", async (req, res) => {
+usersRouter.post("/:id/password", roles("Developer"), async (req, res) => {
   const userId = id.parse(req.params.id),
     input = z.object({ newPassword: password }).strict().parse(req.body);
   if (userId === req.user!.id)

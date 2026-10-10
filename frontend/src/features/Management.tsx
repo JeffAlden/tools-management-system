@@ -204,6 +204,7 @@ export function Accounts({
   onClose: () => void;
   notify: (message: string) => void;
 }) {
+  const developer = current.role === "Developer";
   const [users, setUsers] = useState<User[]>([]),
     [busy, setBusy] = useState(false),
     [target, setTarget] = useState<User | null>(null),
@@ -254,7 +255,7 @@ export function Accounts({
     }
   }
   return (
-    <Modal wide title="Developer Account Control" onClose={onClose}>
+    <Modal wide title={developer ? "Developer Account Control" : "User Accounts"} onClose={onClose}>
       <form
         onSubmit={create}
         className="bg-slate-50 p-4 rounded-xl border space-y-3"
@@ -300,8 +301,8 @@ export function Accounts({
             className="input w-auto"
           >
             <option>User</option>
-            <option>Admin</option>
-            <option>Developer</option>
+            {developer && <option>Admin</option>}
+            {developer && <option>Developer</option>}
           </select>
           <button className="btn-primary" disabled={busy}>
             Create Account
@@ -329,6 +330,7 @@ export function Accounts({
                 <td>
                   <input
                     className="input"
+                    disabled={!developer}
                     aria-label={`Name for ${user.username}`}
                     value={user.name}
                     onChange={(e) =>
@@ -343,7 +345,7 @@ export function Accounts({
                 <td>
                   <select
                     className="input"
-                    disabled={user.id === current.id}
+                    disabled={!developer || user.id === current.id}
                     aria-label={`Role for ${user.username}`}
                     value={user.role}
                     onChange={(e) =>
@@ -365,7 +367,7 @@ export function Accounts({
                   <input
                     type="checkbox"
                     aria-label={`Active account ${user.username}`}
-                    disabled={user.id === current.id}
+                    disabled={!developer || user.id === current.id}
                     checked={!!user.active}
                     onChange={(e) =>
                       setUsers(
@@ -379,14 +381,14 @@ export function Accounts({
                   />
                 </td>
                 <td>
-                  <button
+                  {developer && <button
                     className="btn-secondary"
-                    disabled={busy || user.id === current.id}
+                    disabled={!developer || busy || user.id === current.id}
                     onClick={() => update(user)}
                   >
                     Save
-                  </button>
-                  {user.id !== current.id && (
+                  </button>}
+                  {developer && user.id !== current.id && (
                     <button
                       className="btn-secondary ml-1"
                       onClick={() => {

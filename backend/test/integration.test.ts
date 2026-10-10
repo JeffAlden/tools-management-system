@@ -169,7 +169,20 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
   );
   await supertest(app).get("/api/requests").expect(401);
   await borrower.agent.get("/api/users").expect(403);
-  await admin.agent.get("/api/users").expect(403);
+  const adminAccounts = await admin.agent.get("/api/users").expect(200);
+  assert.equal(adminAccounts.body.some((u: any) => u.role === "Developer"), false);
+  assert.ok(adminAccounts.body.some((u: any) => u.role === "Admin"));
+  const adminCreated = await admin.agent.post("/api/users")
+    .set("Origin", origin).set("X-CSRF-Token", admin.csrf)
+    .send({username:`admin-created-${suffix}`,name:"Admin created user",role:"User",password}).expect(201);
+  users.push({id:adminCreated.body.id,username:`admin-created-${suffix}`,role:"User"});
+  for (const role of ["Developer", "Admin"])
+    await admin.agent.post("/api/users").set("Origin",origin).set("X-CSRF-Token",admin.csrf)
+      .send({username:`forbidden-${suffix}`,name:"Forbidden",role,password}).expect(403);
+  await admin.agent.patch("/api/users/"+users[0].id).set("Origin",origin).set("X-CSRF-Token",admin.csrf)
+    .send({name:"Forbidden",role:"User",active:true}).expect(403);
+  await admin.agent.post("/api/users/"+users[0].id+"/password").set("Origin",origin).set("X-CSRF-Token",admin.csrf)
+    .send({newPassword:password}).expect(403);
   await borrower.agent.get("/api/tools").expect(403);
   await admin.agent
     .post("/api/tools")

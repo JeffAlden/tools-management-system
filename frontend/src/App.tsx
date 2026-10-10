@@ -91,7 +91,7 @@ export default function App() {
             </div>
             {user ? (
               <div className="flex items-center gap-2">
-                {user.role === "Developer" && (
+                {user.role !== "User" && (
                   <button
                     className="nav-button text-amber-300"
                     onClick={() => setModal("users")}
@@ -212,7 +212,7 @@ export default function App() {
           </form>
         </Modal>
       )}
-      {modal === "users" && user?.role === "Developer" && (
+      {modal === "users" && user && user.role !== "User" && (
         <Accounts
           current={user}
           notify={setMessage}
