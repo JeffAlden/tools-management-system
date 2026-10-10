@@ -12,9 +12,9 @@
 - Browser preview connects to the live API. ALTECH logos, actual company background and header watermark load. Computed navbar/form hero/footer colors are rgb(0,35,102), exactly #002366.
 - Desktop viewport 1440×1000 and phone viewport 390×844 inspected. Phone document width is 375px (vertical scrollbar included), with no whole-page horizontal overflow; the tool table scrolls within its container. Added a second row, edited name/quantity, and reset back to one row in the browser.
 - Browser workflow passed against the live API: secure Developer login, selected-date submission, photo upload and pointer-drawn signature, dashboard counts, handover, complete return with another photo/signature, closed status and completed record lock. All four private images loaded after reopening the record. The synthetic request and its files were removed afterward to restore the clean preview database.
-- Git ignores .env, encrypted bootstrap credentials, database files and private uploads. The original source is preserved unchanged.
+- Git ignores .env, encrypted bootstrap credentials, database files and private uploads. The original source is preserved outside the runnable repository.
 
-Screenshots: [desktop](screenshots/borrower-desktop.jpg), [phone](screenshots/borrower-mobile.jpg).
+Preview screenshots are archived outside the runnable repository.
 
 ## Engine distinction
 
@@ -29,3 +29,4 @@ The installed MySQL directory contained Workbench's client only. Official MySQL 
 5. Execute a paired database/file backup and restore drill on the target environment; document the measured recovery point and time.
 
 The implementation is available for local review. The project should not be described as fully deployed or as satisfying all acceptance criteria until these remaining checks pass.
+

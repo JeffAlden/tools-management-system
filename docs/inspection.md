@@ -1,12 +1,12 @@
 # Original-source inspection and migration decisions
 
-Reference: `tools_management_system.html` (2,659 lines). The original is retained unchanged, including its insecure legacy examples; it is never served by the new application.
+Reference: `tools_management_system.html` (2,659 lines). Original reference files are archived outside the runnable repository and are never served by the application.
 
 ## Interface and dependencies
 
 Inter typeface; Tailwind utility classes; Font Awesome 6.4; navy #002366 navbar, form hero and footer. Borrower card is max-w-3xl, rounded-2xl with p-6 sections, small text, two-column desktop fields, horizontally scrollable tool table. Header watermark opacity .12. Body uses the company image with a slate .4 overlay, fixed cover background. Mobile breakpoint 640px stacks navigation and actions; tablet breakpoint 1024px constrains logo width. Footer text is preserved.
 
-Required assets all exist: altech-logo.png (navbar), altech-logo2.png (favicon), 00-altech-logo-blue-white.png (watermark), company-scaled-1.png (background). Other supplied logos are retained too. New app bundles fonts/icons locally; original CDN Tailwind, SheetJS, ExcelJS, FileSaver and QRCode.js are replaced by installed dependencies and backend ExcelJS exports.
+Required assets all exist: altech-logo.png (navbar), altech-logo2.png (favicon), 00-altech-logo-blue-white.png (watermark), company-scaled-1.png (background). Unused logo variants are excluded. New app bundles fonts/icons locally; original CDN Tailwind, SheetJS, ExcelJS, FileSaver and QRCode.js are replaced by installed dependencies and backend ExcelJS exports.
 
 ## Actual behavior
 
@@ -37,3 +37,4 @@ Database schema is in database/schema.sql. Users, hashed opaque sessions, tools,
 API: GET /api/auth/session; POST /api/auth/login, /logout, /password; GET/POST /api/requests; GET /api/requests/:id; POST /:id/handover, /:id/returns; GET /api/attachments/:id; GET /api/dashboard; GET/POST /api/tools; PATCH/DELETE /api/tools/:id; POST /api/tools/import; GET/POST /api/users; PATCH /api/users/:id; POST /api/users/:id/password; GET /api/logs; GET /api/reports/:kind (requests, tools, borrower-tools, logs).
 
 Implement source inspection/schema first, then React form, protected database API, lifecycle/accounts/reports, then security/integration checks and deployment. Verification status and remaining deployment prerequisites belong in docs/verification.md; implementation alone is not proof of working cloud deployment.
+
