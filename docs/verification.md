@@ -9,6 +9,7 @@
 - npm audit reports zero known vulnerabilities for the installed dependency tree. Sharp/Tailwind were upgraded; the ExcelJS UUID dependency is overridden to a patched compatible release. Catalog import uses the official SheetJS 0.20.3 distribution.
 - Browser preview connects to the live API. ALTECH logos, actual company background and header watermark load. Computed navbar/form hero/footer colors are rgb(0,35,102), exactly #002366.
 - Desktop viewport 1440×1000 and phone viewport 390×844 inspected. Phone document width is 375px (vertical scrollbar included), with no whole-page horizontal overflow; the tool table scrolls within its container. Added a second row, edited name/quantity, and reset back to one row in the browser.
+- Browser workflow passed against the live API: secure Developer login, selected-date submission, photo upload and pointer-drawn signature, dashboard counts, handover, complete return with another photo/signature, closed status and completed record lock. All four private images loaded after reopening the record. The synthetic request and its files were removed afterward to restore the clean preview database.
 - Git ignores .env, encrypted bootstrap credentials, database files and private uploads. The original source is preserved unchanged.
 
 Screenshots: [desktop](screenshots/borrower-desktop.jpg), [phone](screenshots/borrower-mobile.jpg).
@@ -21,7 +22,7 @@ The installed MySQL directory contained Workbench's client only. Official MySQL 
 
 1. Run the integration suite and setup/migration checks against MySQL 8.4; run the supplied CI workflow and build/start the Docker production images. Docker is not installed locally, so container builds and Caddy certificate issuance have not been tested here.
 2. Choose cloud provider/project, region and domain; provision managed MySQL, production secrets and encrypted persistent uploads. Deploy, verify HTTPS, private database connectivity and provider backups. No cloud resources have been provisioned and no public deployment URL exists yet.
-3. Run browser end-to-end submission, signature, live-camera and handover/return acceptance on actual desktop and mobile devices. Real camera permissions/hardware and touch signature behavior have not been exercised; the capture components are implemented and upload validation is tested with synthetic images.
+3. Run acceptance on actual desktop and mobile devices. Real camera permissions/hardware and touch signature behavior have not been exercised; desktop browser submission, pointer signatures, file uploads and handover/return passed with synthetic images.
 4. Verify shared records from separate real devices/locations and browser closure; backend fresh-session persistence is tested, but multi-location internet access requires the deployed host.
 5. Execute a paired database/file backup and restore drill on the target environment; document the measured recovery point and time.
 
