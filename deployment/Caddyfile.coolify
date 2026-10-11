@@ -1,4 +1,6 @@
 :80 {
+ @apex host jeffreypalino.com
+ redir @apex https://www.jeffreypalino.com{uri} permanent
  encode gzip
  header {
   Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
