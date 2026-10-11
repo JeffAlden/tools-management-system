@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: deployment/Dockerfile.mysql
     restart: unless-stopped
+    ports:
+      - '127.0.0.1:13306:3306'
     environment:
       MYSQL_DATABASE: altech_tms
       MYSQL_USER: tms_app
@@ -21,7 +23,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 60
-    # No published database port. Only containers in this stack can connect.
+    # Loopback only: desktop clients connect through SSH, never a public DB port.
   api:
     build:
       context: .

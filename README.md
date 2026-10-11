@@ -149,7 +149,7 @@ Environment variable names are listed in `.env.example`. Secrets, `node_modules`
 
 ## Contabo VPS with Coolify
 
-Use Ubuntu 24.04 and self-hosted Coolify. Add this repository as a Git-based Docker Compose application, branch `main`, base directory `/`, Compose location `/docker-compose.yaml`. This file builds three services: `web`, `api`, and private MySQL 8.4. Coolify terminates HTTPS; the web container serves the frontend and forwards `/api` to the backend. MySQL requires TLS; only its public CA is shared with the API. No API or database port is published.
+Use Ubuntu 24.04 and self-hosted Coolify. Add this repository as a Git-based Docker Compose application, branch `main`, base directory `/`, Compose location `/docker-compose.yaml`. This file builds three services: `web`, `api`, and private MySQL 8.4. Coolify terminates HTTPS; the web container serves the frontend and forwards `/api` to the backend. MySQL requires TLS; only its public CA is shared with the API. MySQL is bound only to VPS loopback `127.0.0.1:13306` for SSH-tunneled desktop access. Neither the API nor database has a public port.
 
 After loading the Compose file, review these runtime environment variables in Coolify:
 
