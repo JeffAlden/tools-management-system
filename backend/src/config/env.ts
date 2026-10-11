@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 dotenv.config({ path: path.resolve(process.cwd(), ".env"), quiet: true });
 dotenv.config({ path: path.resolve(process.cwd(), "../.env"), quiet: true });
@@ -24,4 +25,6 @@ if (
   (!env.APP_ORIGIN.startsWith("https://") || !env.MYSQL_SSL_CA)
 )
   throw new Error("Production requires HTTPS origin and MYSQL_SSL_CA");
-export const uploadDir = path.resolve(env.UPLOAD_DIR);
+// Resolve relative storage paths against backend/, independent of launch directory.
+const backendDir = fileURLToPath(new URL("../../", import.meta.url));
+export const uploadDir = path.resolve(backendDir, env.UPLOAD_DIR);
