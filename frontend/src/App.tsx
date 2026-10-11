@@ -13,12 +13,21 @@ export default function App() {
     [ready, setReady] = useState(false),
     [busy, setBusy] = useState(false);
   useEffect(() => {
-    session()
+    let active = true;
+    let retryTimer: ReturnType<typeof setTimeout>;
+    function connect() {
+      session()
       .then((s) => {
+        if (!active) return;
         setUser(s.user);
         setReady(true);
       })
-      .catch((e) => setMessage("Unable to connect to the API: " + e.message));
+      .catch(() => {
+        if (active) retryTimer = setTimeout(connect, 3000);
+      });
+    }
+    connect();
+    return () => { active = false; clearTimeout(retryTimer); };
   }, []);
   useEffect(() => {
     if (!message) return;
