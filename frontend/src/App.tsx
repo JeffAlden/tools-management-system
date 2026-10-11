@@ -175,7 +175,7 @@ export default function App() {
         )}
       </main>
       <footer className="mt-auto py-4 text-center text-xs font-medium text-white bg-[#002366]">
-        © Copyright 2026 - IT Jeff | Eric C. the Pogi
+        © Copyright 2026
       </footer>
       {message && (
         <div
