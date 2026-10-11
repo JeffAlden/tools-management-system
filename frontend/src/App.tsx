@@ -30,6 +30,35 @@ export default function App() {
     return () => { active = false; clearTimeout(retryTimer); };
   }, []);
   useEffect(() => {
+    if (!user) return;
+    let active = true;
+    let checking = false;
+    async function checkSession() {
+      if (checking) return;
+      checking = true;
+      try {
+        const result = await session();
+        if (active && !result.user) {
+          setUser(null);
+          setTab("borrower");
+          setModal("");
+          setMessage("Your session ended. Please sign in again.");
+        }
+      } catch {
+        // A temporary connection failure does not establish that a session ended.
+      } finally {
+        checking = false;
+      }
+    }
+    const timer = setInterval(checkSession, 30000);
+    window.addEventListener("focus", checkSession);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", checkSession);
+    };
+  }, [user]);
+  useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => setMessage(""), 10000);
     return () => clearTimeout(timer);

@@ -379,6 +379,12 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
       .status,
     "Completed",
   );
+  const replacement = await authenticate(2);
+  await fresh.agent.get("/api/requests").expect(401);
+  await replacement.agent.get("/api/requests").expect(200);
+  const concurrentLogins = await Promise.all([authenticate(3), authenticate(3)]);
+  const statuses = await Promise.all(concurrentLogins.map(({ agent }) => agent.get("/api/requests").then(r => r.status)));
+  assert.deepEqual(statuses.sort(), [200, 401], "Only one concurrent login remains authorized");
   const reset = await developer.agent
     .post("/api/users/" + users[2].id + "/password")
     .set("Origin", origin)
@@ -387,4 +393,5 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
     .expect(200);
   assert.equal(reset.body.ok, true);
   await fresh.agent.get("/api/requests").expect(401);
+  await replacement.agent.get("/api/requests").expect(401);
 });

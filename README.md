@@ -129,6 +129,8 @@ A fresh office database is a separate system. For shared records across location
 
 ## Build and test
 
+Each account has one active authenticated session. A successful sign-in revokes earlier sessions for that account; their next protected request is denied. Use separate staff accounts rather than sharing credentials. Failed sign-ins do not revoke existing sessions.
+
 ```powershell
 npm run build
 npm test

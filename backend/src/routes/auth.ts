@@ -31,31 +31,24 @@ authRouter.get("/session", async (req, res) => {
 });
 authRouter.post("/login", loginLimiter, async (req, res) => {
   const input = login.parse(req.body);
-  const [user] = await rows(
-    pool,
-    "SELECT id,username,name,role,password_hash,active FROM users WHERE username=?",
-    [input.username],
-  );
-  const valid = await argon2.verify(
-    user?.password_hash || dummyHash,
-    input.password,
-  );
-  if (!user || !user.active || !valid)
-    throw new HttpError(401, "Invalid username or password.");
-  const safe = {
-    id: user.id,
-    username: user.username,
-    name: user.name,
-    role: user.role,
-  };
-  const csrf = await transaction(async (db) => {
-    await db.execute("DELETE FROM sessions WHERE token_hash=?", [
-      req.session!.hash,
+  const result = await transaction(async (db) => {
+    // Serialize sign-ins per account, including concurrent browser logins.
+    const [user] = await rows(
+      db,
+      "SELECT id,username,name,role,password_hash,active FROM users WHERE username=? FOR UPDATE",
+      [input.username],
+    );
+    const valid = await argon2.verify(user?.password_hash || dummyHash, input.password);
+    if (!user || !user.active || !valid)
+      throw new HttpError(401, "Invalid username or password.");
+    const safe = { id: user.id, username: user.username, name: user.name, role: user.role };
+    await db.execute("DELETE FROM sessions WHERE user_id=? OR token_hash=?", [
+      user.id, req.session!.hash,
     ]);
     await audit(db, safe, "Sign in", "Authenticated session created.");
-    return createSession(res, safe.id, db);
+    return { user: safe, csrf: await createSession(res, safe.id, db) };
   });
-  res.json({ user: safe, csrf });
+  res.json(result);
 });
 authRouter.post("/logout", authenticated, async (req, res) => {
   await transaction(async (db) => {
