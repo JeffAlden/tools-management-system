@@ -146,3 +146,34 @@ Integration tests require a separate disposable database named `altech_tms_test`
 Production requires HTTPS, restricted MySQL access, DB TLS CA, private persistent uploads, and secure environment variables. Back up SQL and uploads together. After migrations, runtime database privileges should be limited to `SELECT`, `INSERT`, `UPDATE`, and `DELETE`. A single API instance is supported, horizontal scaling needs shared rate limiting and storage.
 
 Environment variable names are listed in `.env.example`. Secrets, `node_modules`, builds, uploads, logs, and backups are excluded from Git.
+
+## Contabo VPS with Coolify
+
+Use Ubuntu 24.04 and self-hosted Coolify. Add this repository as a Git-based Docker Compose application, branch `main`, base directory `/`, Compose location `/docker-compose.yaml`. This file builds three services: `web`, `api`, and private MySQL 8.4. Coolify terminates HTTPS; the web container serves the frontend and forwards `/api` to the backend. MySQL requires TLS; only its public CA is shared with the API. No API or database port is published.
+
+Before deploying, set these runtime environment variables in Coolify:
+
+- `APP_ORIGIN`: your exact public HTTPS origin, for example `https://www.jeffreypalino.com` (no trailing slash).
+- `MYSQL_PASSWORD`: a newly generated strong password for the application's database user.
+- `MYSQL_ROOT_PASSWORD`: a different strong password for database administration.
+
+Generate each password privately, for example using `openssl rand -hex 32` in your SSH terminal. Keep them in a password manager. The same `MYSQL_PASSWORD` variable is passed to MySQL initialization and the API, so no manual SQL password matching is required. MySQL initialization variables apply only when its data volume is empty; changing them later does not change existing database passwords.
+
+Point your domain's DNS A record to the VPS public IPv4 address. Assign the HTTPS domain to the `web` service, internal port `80`, only. Leave `api` and `mysql` without public domains. Allow public HTTP/HTTPS to Coolify's proxy. Save, load the Compose file, and deploy. The API runs migrations before starting; it does not create any users or import legacy data.
+
+Once deployment is healthy, open the `api` container's Terminal in Coolify and run this Bash-compatible setup sequence. Enter your chosen Developer account details when prompted; the password is hidden and isn't placed in shell history:
+
+```bash
+read -r -p 'Developer username: ' SETUP_USERNAME
+read -r -p 'Full name: ' SETUP_NAME
+read -r -s -p 'Developer password: ' SETUP_PASSWORD; echo
+export SETUP_USERNAME SETUP_NAME SETUP_PASSWORD
+node backend/dist/scripts/setup.js
+unset SETUP_USERNAME SETUP_NAME SETUP_PASSWORD
+```
+
+The password must satisfy the application's account validation (12–128 characters, uppercase, lowercase, number, and symbol). Setup refuses when users already exist. Log in through the application dashboard with this account. Coolify's administrator account is separate.
+
+Named volumes preserve `mysql_data`, `mysql_ca`, and `uploads` across ordinary redeployments. Do not delete these volumes when updating. Volume persistence is not a backup: export MySQL using `mysqldump --single-transaction --no-tablespaces` and copy the uploads volume to separate storage regularly. To restore, stop the API, import SQL into the same schema, restore the uploads files with the API user's ownership, then restart. Keep the database CA volume with the associated database volume; never regenerate or discard it independently. The database user needs schema privileges for startup migrations; a stricter runtime-only account requires running migrations separately.
+
+This Coolify configuration requires deployment verification on the VPS; a local frontend/backend build does not verify Docker networking, MySQL TLS, HTTPS, or persistence. Existing managed-MySQL deployments can continue using `deployment/compose.production.yml`.

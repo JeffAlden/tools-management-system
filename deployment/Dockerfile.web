@@ -7,6 +7,7 @@ RUN npm ci
 COPY frontend frontend
 RUN npm run build -w frontend
 FROM caddy:2-alpine
+ARG CADDY_CONFIG=deployment/Caddyfile
 COPY --from=build /app/frontend/dist /srv
-COPY deployment/Caddyfile /etc/caddy/Caddyfile
+COPY ${CADDY_CONFIG} /etc/caddy/Caddyfile
 EXPOSE 80 443

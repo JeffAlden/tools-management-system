@@ -1,0 +1,72 @@
+services:
+  mysql:
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile.mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: altech_tms
+      MYSQL_USER: tms_app
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in Coolify}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in Coolify}
+    entrypoint:
+      - /bin/bash
+      - -c
+      - 'chown mysql:mysql /mysql-ca && exec /usr/local/bin/docker-entrypoint.sh mysqld --require-secure-transport=ON'
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - mysql_ca:/mysql-ca
+    healthcheck:
+      test: ['CMD-SHELL', 'test -s /mysql-ca/ca.pem && mysqladmin ping -h 127.0.0.1 --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    # No published database port. Only containers in this stack can connect.
+  api:
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: '3001'
+      APP_ORIGIN: ${APP_ORIGIN:?Set HTTPS APP_ORIGIN in Coolify}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: '3306'
+      MYSQL_DATABASE: altech_tms
+      MYSQL_USER: tms_app
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in Coolify}
+      MYSQL_SSL_CA: /run/mysql-ca/ca.pem
+      UPLOAD_DIR: /app/uploads
+      TRUST_PROXY: '1'
+    command: ['sh', '-c', 'node backend/dist/scripts/migrate.js && exec node backend/dist/server.js']
+    volumes:
+      - uploads:/app/uploads
+      - mysql_ca:/run/mysql-ca:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    expose: ['3001']
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3001/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+    security_opt: ['no-new-privileges:true']
+  web:
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile.web
+      args:
+        CADDY_CONFIG: deployment/Caddyfile.coolify
+    restart: unless-stopped
+    expose: ['80']
+    depends_on:
+      api:
+        condition: service_healthy
+    # Assign the HTTPS domain ONLY to web, port 80, in Coolify.
+    # Coolify's proxy handles public ports 80/443 and certificates.
+volumes:
+  mysql_data:
+  mysql_ca:
+  uploads:
