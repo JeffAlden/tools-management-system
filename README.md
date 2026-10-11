@@ -151,13 +151,13 @@ Environment variable names are listed in `.env.example`. Secrets, `node_modules`
 
 Use Ubuntu 24.04 and self-hosted Coolify. Add this repository as a Git-based Docker Compose application, branch `main`, base directory `/`, Compose location `/docker-compose.yaml`. This file builds three services: `web`, `api`, and private MySQL 8.4. Coolify terminates HTTPS; the web container serves the frontend and forwards `/api` to the backend. MySQL requires TLS; only its public CA is shared with the API. No API or database port is published.
 
-Before deploying, set these runtime environment variables in Coolify:
+After loading the Compose file, review these runtime environment variables in Coolify:
 
 - `APP_ORIGIN`: your exact public HTTPS origin, for example `https://www.jeffreypalino.com` (no trailing slash).
-- `MYSQL_PASSWORD`: a newly generated strong password for the application's database user.
-- `MYSQL_ROOT_PASSWORD`: a different strong password for database administration.
+- `SERVICE_PASSWORD_64_MYSQL`: Coolify automatically generates this 64-character password for the application's database user.
+- `SERVICE_PASSWORD_64_MYSQLROOT`: Coolify automatically generates a separate 64-character password for database administration.
 
-Generate each password privately, for example using `openssl rand -hex 32` in your SSH terminal. Keep them in a password manager. The same `MYSQL_PASSWORD` variable is passed to MySQL initialization and the API, so no manual SQL password matching is required. MySQL initialization variables apply only when its data volume is empty; changing them later does not change existing database passwords.
+The Compose file defaults `APP_ORIGIN` to `https://www.jeffreypalino.com`; change it in Coolify if using another address. Coolify stores generated passwords privately and reuses them across deployments. The same generated application password is passed to MySQL initialization and the API, so no manual SQL password matching is required. Keep the generated values in a password manager. MySQL initialization variables apply only when its data volume is empty; changing them later does not change existing database passwords. Existing installations must retain their current passwords when switching variable names; automatic generation is intended for fresh installations.
 
 Point your domain's DNS A record to the VPS public IPv4 address. Assign the HTTPS domain to the `web` service, internal port `80`, only. Leave `api` and `mysql` without public domains. Allow public HTTP/HTTPS to Coolify's proxy. Save, load the Compose file, and deploy. The API runs migrations before starting; it does not create any users or import legacy data.
 

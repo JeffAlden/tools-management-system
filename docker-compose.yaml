@@ -7,8 +7,8 @@ services:
     environment:
       MYSQL_DATABASE: altech_tms
       MYSQL_USER: tms_app
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in Coolify}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in Coolify}
+      MYSQL_PASSWORD: ${SERVICE_PASSWORD_64_MYSQL}
+      MYSQL_ROOT_PASSWORD: ${SERVICE_PASSWORD_64_MYSQLROOT}
     entrypoint:
       - /bin/bash
       - -c
@@ -30,12 +30,12 @@ services:
     environment:
       NODE_ENV: production
       PORT: '3001'
-      APP_ORIGIN: ${APP_ORIGIN:?Set HTTPS APP_ORIGIN in Coolify}
+      APP_ORIGIN: ${APP_ORIGIN:-https://www.jeffreypalino.com}
       MYSQL_HOST: mysql
       MYSQL_PORT: '3306'
       MYSQL_DATABASE: altech_tms
       MYSQL_USER: tms_app
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in Coolify}
+      MYSQL_PASSWORD: ${SERVICE_PASSWORD_64_MYSQL}
       MYSQL_SSL_CA: /run/mysql-ca/ca.pem
       UPLOAD_DIR: /app/uploads
       TRUST_PROXY: '1'
