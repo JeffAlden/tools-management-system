@@ -153,11 +153,11 @@ Use Ubuntu 24.04 and self-hosted Coolify. Add this repository as a Git-based Doc
 
 After loading the Compose file, review these runtime environment variables in Coolify:
 
-- `APP_ORIGIN`: your exact public HTTPS origin, for example `https://www.jeffreypalino.com` (no trailing slash).
+- `APP_ORIGIN` is fixed in the Compose file to `https://www.jeffreypalino.com` (no trailing slash); it does not require editing in Coolify.
 - `SERVICE_PASSWORD_64_MYSQL`: Coolify automatically generates this 64-character password for the application's database user.
 - `SERVICE_PASSWORD_64_MYSQLROOT`: Coolify automatically generates a separate 64-character password for database administration.
 
-The Compose file defaults `APP_ORIGIN` to `https://www.jeffreypalino.com`; change it in Coolify if using another address. Coolify stores generated passwords privately and reuses them across deployments. The same generated application password is passed to MySQL initialization and the API, so no manual SQL password matching is required. Keep the generated values in a password manager. MySQL initialization variables apply only when its data volume is empty; changing them later does not change existing database passwords. Existing installations must retain their current passwords when switching variable names; automatic generation is intended for fresh installations.
+The Compose file sets `APP_ORIGIN` to `https://www.jeffreypalino.com`; edit that non-secret value in the repository if using another address. Coolify stores generated passwords privately and reuses them across deployments. The same generated application password is passed to MySQL initialization and the API, so no manual SQL password matching is required. Keep the generated values in a password manager. MySQL initialization variables apply only when its data volume is empty; changing them later does not change existing database passwords. Existing installations must retain their current passwords when switching variable names; automatic generation is intended for fresh installations.
 
 Point your domain's DNS A record to the VPS public IPv4 address. Assign the HTTPS domain to the `web` service, internal port `80`, only. Leave `api` and `mysql` without public domains. Allow public HTTP/HTTPS to Coolify's proxy. Save, load the Compose file, and deploy. The API runs migrations before starting; it does not create any users or import legacy data.
 
