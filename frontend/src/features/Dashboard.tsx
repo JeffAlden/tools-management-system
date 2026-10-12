@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { Modal } from "../components/Modal";
 import { ActivityLogDetail } from "../components/ActivityLogDetail";
 import { api, report } from "../services/api";
-import { formatDate, localDate } from "../utils/date";
+import { formatDate, localDate, possession } from "../utils/date";
 import { RequestDetail } from "./RequestDetail";
 import { Catalog } from "./Management";
 import type { BorrowRequest, Log, User } from "../types";
@@ -15,8 +15,11 @@ export function Dashboard({
   notify: (message: string) => void;
 }) {
   const [requests, setRequests] = useState<BorrowRequest[]>([]),
+    [counts, setCounts] = useState<Record<string, number>>({}),
     [loading, setLoading] = useState(true),
     [search, setSearch] = useState(""),
+    [toolSearch, setToolSearch] = useState(""),
+    [now, setNow] = useState(Date.now()),
     [when, setWhen] = useState(""),
     [status, setStatus] = useState("all"),
     [selected, setSelected] = useState<BorrowRequest | null>(null),
@@ -29,7 +32,13 @@ export function Dashboard({
   const admin = user.role !== "User";
   async function reload() {
     try {
-      setRequests(await api<BorrowRequest[]>("/requests"));
+      const [records, summary] = await Promise.all([
+        api<BorrowRequest[]>("/requests"),
+        api<Record<string, number>>("/dashboard"),
+      ]);
+      setRequests(records);
+      setCounts(summary);
+      setNow(Date.now());
     } catch (e) {
       notify((e as Error).message);
     } finally {
@@ -82,26 +91,28 @@ export function Dashboard({
         {[
           {
             label: "Total Requests",
-            count: requests.length,
+            count: Object.values(counts).reduce(
+              (total, count) => total + count,
+              0,
+            ),
             icon: "folder-open",
             color: "blue",
           },
           {
             label: "Pending Review",
-            count: requests.filter((r) => r.status === "Pending Approval")
-              .length,
+            count: counts["Pending Approval"] || 0,
             icon: "hourglass-half",
             color: "amber",
           },
           {
             label: "Currently Borrowed",
-            count: requests.filter((r) => r.status === "Issued").length,
+            count: counts.Issued || 0,
             icon: "hand-holding-hand",
             color: "indigo",
           },
           {
             label: "Returned & Closed",
-            count: requests.filter((r) => r.status === "Completed").length,
+            count: counts.Completed || 0,
             icon: "circle-check",
             color: "emerald",
           },
@@ -136,12 +147,16 @@ export function Dashboard({
               >
                 Export Borrow Reports
               </button>
-              <button
-                className="btn-secondary"
-                onClick={() => open("borrower-tools")}
-              >
-                Borrower Added Tools
-              </button>
+            </>
+          )}
+          <button
+            className="btn-secondary"
+            onClick={() => open("borrower-tools")}
+          >
+            Borrower Added Tools
+          </button>
+          {admin && (
+            <>
               <button className="btn-secondary" onClick={() => open("catalog")}>
                 Tools Catalog
               </button>
@@ -153,9 +168,6 @@ export function Dashboard({
               </button>
             </>
           )}
-          <button className="btn-secondary" onClick={() => reload()}>
-            Refresh
-          </button>
         </div>
         <div className="flex flex-col sm:flex-row justify-center gap-2">
           <input
@@ -189,9 +201,7 @@ export function Dashboard({
         <div className="px-6 py-4 border-b bg-slate-50 flex justify-between gap-2">
           <h3 className="font-bold text-sm">
             <i className="fas fa-list-check text-indigo-600 mr-2" />
-            {admin
-              ? "Equipment Borrow Requests & Returns Log"
-              : "My Borrow Requests & Returns Log"}
+            Equipment Borrow Requests & Returns Log
           </h3>
           <span className="text-xs text-slate-400">Updates every 30s</span>
         </div>
@@ -214,7 +224,10 @@ export function Dashboard({
             <tbody>
               {filtered.map((r) => (
                 <tr key={r.id}>
-                  <td data-label="Reference / Date" className="font-mono max-w-56 break-all">
+                  <td
+                    data-label="Reference / Date"
+                    className="font-mono max-w-56 break-all"
+                  >
                     <b>{r.reference}</b>
                     <p className="text-[10px] text-slate-400">
                       {formatDate(r.request_date)}
@@ -316,12 +329,21 @@ export function Dashboard({
           title="Tools Added by Borrowers"
           onClose={() => setModal("")}
         >
-          <button
-            className="btn-primary"
-            onClick={() => exportReport("borrower-tools")}
-          >
-            Export Tools
-          </button>
+          <input
+            className="input"
+            aria-label="Search borrower added tools"
+            placeholder="Search borrower, request number, or tool..."
+            value={toolSearch}
+            onChange={(e) => setToolSearch(e.target.value)}
+          />
+          {admin && (
+            <button
+              className="btn-primary"
+              onClick={() => exportReport("borrower-tools")}
+            >
+              Export Tools
+            </button>
+          )}
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
@@ -334,6 +356,10 @@ export function Dashboard({
                     "Returned",
                     "Return Status",
                     "Notes / Specification",
+                    "Requested Date / Time",
+                    "Returned Date / Time",
+                    "Current Possession",
+                    "Request to Return",
                   ].map((h) => (
                     <th key={h}>{h}</th>
                   ))}
@@ -341,17 +367,37 @@ export function Dashboard({
               </thead>
               <tbody>
                 {requests.flatMap((r) =>
-                  r.items.map((i) => (
-                    <tr key={i.id}>
-                      <td>{r.reference}</td>
-                      <td>{r.borrower_name}</td>
-                      <td>{i.name}</td>
-                      <td>{i.requested_qty}</td>
-                      <td>{i.returned_qty}</td>
-                      <td>{i.return_status}</td>
-                      <td>{i.note}</td>
-                    </tr>
-                  )),
+                  r.items
+                    .filter((i) =>
+                      [r.borrower_name, r.reference, i.name].some((value) =>
+                        value
+                          .toLowerCase()
+                          .includes(toolSearch.trim().toLowerCase()),
+                      ),
+                    )
+                    .map((i) => (
+                      <tr key={i.id}>
+                        <td>{r.reference}</td>
+                        <td>{r.borrower_name}</td>
+                        <td>{i.name}</td>
+                        <td>{i.requested_qty}</td>
+                        <td>{i.returned_qty}</td>
+                        <td>{i.return_status}</td>
+                        <td>{i.note}</td>
+                        <td>{formatDate(r.request_date)}</td>
+                        <td>{formatDate(i.returned_at || null)}</td>
+                        <td>
+                          {i.returned_at
+                            ? "-"
+                            : possession(r.borrow_date, null, now)}
+                        </td>
+                        <td>
+                          {i.returned_at
+                            ? possession(r.request_date, i.returned_at, now)
+                            : "-"}
+                        </td>
+                      </tr>
+                    )),
                 )}
               </tbody>
             </table>
@@ -436,7 +482,16 @@ export function Dashboard({
         </Modal>
       )}
       {logDetail && (
-        <ActivityLogDetail key={logDetail.id} log={logDetail} onClose={()=>setLogDetail(null)} onInspect={(id)=>{void inspect(id);setLogDetail(null);setModal("");}} />
+        <ActivityLogDetail
+          key={logDetail.id}
+          log={logDetail}
+          onClose={() => setLogDetail(null)}
+          onInspect={(id) => {
+            void inspect(id);
+            setLogDetail(null);
+            setModal("");
+          }}
+        />
       )}
     </div>
   );

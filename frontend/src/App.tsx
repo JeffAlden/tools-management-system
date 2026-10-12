@@ -7,11 +7,18 @@ import { Accounts } from "./features/Management";
 import type { User } from "./types";
 export default function App() {
   const [user, setUser] = useState<User | null>(null),
-    [tab, setTab] = useState("borrower"),
+    [tab, setTab] = useState(() =>
+      sessionStorage.getItem("tms-tab") === "dashboard"
+        ? "dashboard"
+        : "borrower",
+    ),
     [modal, setModal] = useState(""),
     [message, setMessage] = useState(""),
     [ready, setReady] = useState(false),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    sessionStorage.setItem("tms-tab", tab);
+  }, [tab]);
   useEffect(() => {
     let active = true;
     let retryTimer: ReturnType<typeof setTimeout>;
@@ -111,8 +118,7 @@ export default function App() {
                 },
                 {
                   key: "dashboard",
-                  label:
-                    user?.role === "User" ? "My Requests" : "Tools Dashboard",
+                  label: "Tools Dashboard",
                   icon: "chart-line",
                 },
               ].map((t) => (
@@ -198,7 +204,7 @@ export default function App() {
               requests and tools dashboard.
             </p>
             <button className="btn-primary" onClick={() => setModal("login")}>
-              Login in
+              Login
             </button>
           </div>
         )}

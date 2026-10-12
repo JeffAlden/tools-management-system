@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { pool, rows, type DB } from "../repositories/db.js";
-import { env } from "../config/env.js";
+import { env, allowedOrigins } from "../config/env.js";
 export type Role = "Developer" | "Admin" | "User";
 export type User = { id: string; username: string; name: string; role: Role };
 declare global {
@@ -62,7 +62,7 @@ export function csrf(req: Request, _res: Response, next: NextFunction) {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
   const candidate = req.get("X-CSRF-Token") || "";
   if (
-    req.get("Origin") !== env.APP_ORIGIN ||
+    !allowedOrigins.has(req.get("Origin") || "") ||
     !req.session ||
     !/^[a-f0-9]{64}$/.test(candidate) ||
     !timingSafeEqual(Buffer.from(candidate), Buffer.from(req.session.csrf))

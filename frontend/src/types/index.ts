@@ -11,6 +11,7 @@ export type Item = {
   name: string;
   requested_qty: number;
   returned_qty: number;
+  returned_at?: string | null;
   note: string;
   condition_note: string;
   return_status: string;
@@ -22,6 +23,7 @@ export type Attachment = {
   event_id: string | null;
 };
 export type BorrowRequest = {
+  user_id: string;
   id: string;
   reference: string;
   borrower_name: string;

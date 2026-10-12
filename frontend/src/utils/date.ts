@@ -12,13 +12,16 @@ export function nowLocal() {
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().slice(0, 16);
 }
-export function possession(start: string | null, end: string | null) {
+export function possession(
+  start: string | null,
+  end: string | null,
+  now = Date.now(),
+) {
   if (!start) return "0 hrs (Not Issued)";
   const hours = Math.max(
     0,
     Math.floor(
-      ((end ? date(end).getTime() : Date.now()) - date(start).getTime()) /
-        3600000,
+      ((end ? date(end).getTime() : now) - date(start).getTime()) / 3600000,
     ),
   );
   return hours >= 24

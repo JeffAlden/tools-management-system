@@ -20,6 +20,15 @@ const schema = z.object({
   TRUST_PROXY: z.enum(["0", "1"]).default("0"),
 });
 export const env = schema.parse(process.env);
+// Allow only the equivalent loopback hostname in local development.
+export const allowedOrigins = new Set([new URL(env.APP_ORIGIN).origin]);
+if (env.NODE_ENV !== "production") {
+  const local = new URL(env.APP_ORIGIN);
+  if (["localhost", "127.0.0.1"].includes(local.hostname)) {
+    local.hostname = local.hostname === "localhost" ? "127.0.0.1" : "localhost";
+    allowedOrigins.add(local.origin);
+  }
+}
 if (
   env.NODE_ENV === "production" &&
   (!env.APP_ORIGIN.startsWith("https://") || !env.MYSQL_SSL_CA)

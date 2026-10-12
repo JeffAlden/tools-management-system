@@ -118,7 +118,7 @@ usersRouter.get("/", async (req, res) =>
   res.json(
     await rows(
       pool,
-      `SELECT id,username,name,role,active,created_at FROM users ${req.user!.role === "Admin" ? "WHERE role IN ('Admin','User')" : ""} ORDER BY username`,
+      `SELECT id,username,name,role,active,created_at FROM users WHERE deleted_at IS NULL ${req.user!.role === "Admin" ? "AND role IN ('Admin','User')" : ""} ORDER BY username`,
     ),
   ),
 );
@@ -126,8 +126,7 @@ usersRouter.post("/", async (req, res) => {
   const input = account.parse(req.body);
   if (req.user!.role === "Admin" && input.role !== "User")
     throw new HttpError(403, "Admins may create Regular User accounts only.");
-  const
-    userId = randomUUID(),
+  const userId = randomUUID(),
     hash = await argon2.hash(input.password, {
       type: argon2.argon2id,
       memoryCost: 65536,
@@ -160,7 +159,8 @@ usersRouter.patch("/:id", roles("Developer"), async (req, res) => {
     const [user] = await rows(db, "SELECT * FROM users WHERE id=? FOR UPDATE", [
       userId,
     ]);
-    if (!user) throw new HttpError(404, "Account not found.");
+    if (!user || user.deleted_at)
+      throw new HttpError(404, "Account not found.");
     await db.execute("UPDATE users SET name=?,role=?,active=? WHERE id=?", [
       input.name,
       input.role,
@@ -177,10 +177,10 @@ usersRouter.patch("/:id", roles("Developer"), async (req, res) => {
   });
   res.json({ ok: true });
 });
-usersRouter.post("/:id/password", roles("Developer"), async (req, res) => {
+usersRouter.post("/:id/password", async (req, res) => {
   const userId = id.parse(req.params.id),
     input = z.object({ newPassword: password }).strict().parse(req.body);
-  if (userId === req.user!.id)
+  if (userId === req.user!.id && req.user!.role === "Developer")
     throw new HttpError(400, "Use Change Password for your own account.");
   const hash = await argon2.hash(input.newPassword, {
     type: argon2.argon2id,
@@ -189,11 +189,15 @@ usersRouter.post("/:id/password", roles("Developer"), async (req, res) => {
     parallelism: 1,
   });
   await transaction(async (db) => {
-    if (
-      !(await rows(db, "SELECT id FROM users WHERE id=? FOR UPDATE", [userId]))
-        .length
-    )
+    const [target] = await rows(
+      db,
+      "SELECT id,role,deleted_at FROM users WHERE id=? FOR UPDATE",
+      [userId],
+    );
+    if (!target || target.deleted_at)
       throw new HttpError(404, "Account not found.");
+    if (req.user!.role === "Admin" && target.role === "Developer")
+      throw new HttpError(403, "Admins cannot reset Developer passwords.");
     await db.execute("UPDATE users SET password_hash=? WHERE id=?", [
       hash,
       userId,
@@ -209,11 +213,41 @@ usersRouter.post("/:id/password", roles("Developer"), async (req, res) => {
   res.json({ ok: true });
 });
 export const dashboardRouter = Router();
+usersRouter.delete("/:id", async (req, res) => {
+  const userId = id.parse(req.params.id);
+  if (userId === req.user!.id)
+    throw new HttpError(403, "You cannot delete your own account.");
+  await transaction(async (db) => {
+    const [target] = await rows(
+      db,
+      "SELECT id,username,role,deleted_at FROM users WHERE id=? FOR UPDATE",
+      [userId],
+    );
+    if (!target || target.deleted_at)
+      throw new HttpError(404, "Account not found.");
+    if (
+      target.role === "Developer" ||
+      (req.user!.role === "Admin" && target.role !== "User")
+    )
+      throw new HttpError(403, "You cannot delete this account.");
+    await db.execute(
+      "UPDATE users SET active=0,deleted_at=UTC_TIMESTAMP(3) WHERE id=?",
+      [userId],
+    );
+    await db.execute("DELETE FROM sessions WHERE user_id=?", [userId]);
+    await audit(
+      db,
+      req.user!,
+      "Account deleted",
+      `${target.username} (${target.role}); history retained.`,
+    );
+  });
+  res.json({ ok: true });
+});
 dashboardRouter.get("/", authenticated, async (req, res) => {
   const result = await rows(
     pool,
-    `SELECT status,COUNT(*) AS count FROM borrow_requests ${req.user!.role === "User" ? "WHERE user_id=?" : ""} GROUP BY status`,
-    req.user!.role === "User" ? [req.user!.id] : [],
+    "SELECT status,COUNT(*) AS count FROM borrow_requests GROUP BY status",
   );
   res.json(Object.fromEntries(result.map((r) => [r.status, r.count])));
 });

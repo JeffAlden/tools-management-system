@@ -255,7 +255,11 @@ export function Accounts({
     }
   }
   return (
-    <Modal wide title={developer ? "Developer Account Control" : "User Accounts"} onClose={onClose}>
+    <Modal
+      wide
+      title={developer ? "Developer Account Control" : "User Accounts"}
+      onClose={onClose}
+    >
       <form
         onSubmit={create}
         className="bg-slate-50 p-4 rounded-xl border space-y-3"
@@ -381,14 +385,17 @@ export function Accounts({
                   />
                 </td>
                 <td>
-                  {developer && <button
-                    className="btn-secondary"
-                    disabled={!developer || busy || user.id === current.id}
-                    onClick={() => update(user)}
-                  >
-                    Save
-                  </button>}
-                  {developer && user.id !== current.id && (
+                  {developer && (
+                    <button
+                      className="btn-secondary"
+                      disabled={!developer || busy || user.id === current.id}
+                      onClick={() => update(user)}
+                    >
+                      Save
+                    </button>
+                  )}
+                  {((developer && user.id !== current.id) ||
+                    (!developer && user.role !== "Developer")) && (
                     <button
                       className="btn-secondary ml-1"
                       onClick={() => {
@@ -399,6 +406,36 @@ export function Accounts({
                       Reset Password
                     </button>
                   )}
+                  {user.id !== current.id &&
+                    user.role !== "Developer" &&
+                    (developer || user.role === "User") && (
+                      <button
+                        className="btn-secondary ml-1"
+                        disabled={busy}
+                        onClick={async () => {
+                          if (
+                            !confirm(
+                              `Delete account ${user.username}? Request and audit history will be retained.`,
+                            )
+                          )
+                            return;
+                          setBusy(true);
+                          try {
+                            await api("/users/" + user.id, {
+                              method: "DELETE",
+                            });
+                            await reload();
+                            notify("Account deleted; sessions revoked.");
+                          } catch (e) {
+                            notify((e as Error).message);
+                          } finally {
+                            setBusy(false);
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                    )}
                 </td>
               </tr>
             ))}

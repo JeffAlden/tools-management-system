@@ -30,7 +30,7 @@ export function RequestDetail({
     [sig, setSig] = useState<Blob | null>(null),
     [busy, setBusy] = useState(false),
     [lightbox, setLightbox] = useState<string | null>(null);
-  const allowed = user.role !== "User",
+  const allowed = user.role !== "User" || request.user_id === user.id,
     issued = request.status === "Issued",
     pending = request.status === "Pending Approval",
     editable = allowed && issued;

@@ -99,7 +99,7 @@ requestsRouter.post(
 );
 requestsRouter.post(
   "/:id/handover",
-  roles("Admin", "Developer"),
+  roles("Admin", "Developer", "User"),
   upload.fields([{ name: "handoverPhoto", maxCount: 1 }]),
   async (req, res) => {
     const requestId = id.parse(req.params.id),
@@ -115,6 +115,7 @@ requestsRouter.post(
           [requestId],
         );
         if (!record) throw new HttpError(404, "Request not found.");
+        assertAccess(req.user!, record);
         if (
           record.status !== "Pending Approval" ||
           record.version !== input.version
@@ -152,7 +153,7 @@ requestsRouter.post(
 );
 requestsRouter.post(
   "/:id/returns",
-  roles("Admin", "Developer"),
+  roles("Admin", "Developer", "User"),
   upload.fields([
     { name: "returnPhoto", maxCount: 1 },
     { name: "returnSignature", maxCount: 1 },
@@ -171,6 +172,7 @@ requestsRouter.post(
           [requestId],
         );
         if (!record) throw new HttpError(404, "Request not found.");
+        assertAccess(req.user!, record);
         if (record.status !== "Issued" || record.version !== input.version)
           throw new HttpError(
             409,
@@ -231,7 +233,8 @@ attachmentsRouter.get("/:id", authenticated, async (req, res) => {
     [id.parse(req.params.id)],
   );
   if (!file) throw new HttpError(404, "Attachment not found.");
-  assertAccess(req.user!, file);
+  // All authenticated roles may inspect shared requests and their photos.
+  // Handover/return writes above continue to enforce request ownership for Users.
   res.set({
     "Content-Type": file.mime_type,
     "Cache-Control": "private, no-store",

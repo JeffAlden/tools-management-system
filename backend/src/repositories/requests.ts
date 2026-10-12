@@ -1,5 +1,5 @@
 import { rows, type DB } from "./db.js";
-import { assertAccess, HttpError, type User } from "../middleware/security.js";
+import { HttpError, type User } from "../middleware/security.js";
 export async function getRequest(db: DB, id: string, user: User) {
   const [record] = await rows(
     db,
@@ -7,7 +7,6 @@ export async function getRequest(db: DB, id: string, user: User) {
     [id],
   );
   if (!record) throw new HttpError(404, "Request not found.");
-  assertAccess(user, record);
   return {
     ...record,
     items: await rows(
@@ -41,17 +40,41 @@ export async function listRequests(
 ): Promise<(Record<string, any> & { items: Record<string, any>[] })[]> {
   const records = await rows(
     db,
-    `SELECT r.*,CONCAT(rel.name,' (',rel.username,')') AS released_name,CONCAT(rec.name,' (',rec.username,')') AS received_name FROM borrow_requests r LEFT JOIN users rel ON rel.id=r.released_by LEFT JOIN users rec ON rec.id=r.received_by ${user.role === "User" ? "WHERE r.user_id=?" : ""} ORDER BY r.created_at DESC`,
-    user.role === "User" ? [user.id] : [],
+    `SELECT r.*,CONCAT(rel.name,' (',rel.username,')') AS released_name,CONCAT(rec.name,' (',rec.username,')') AS received_name FROM borrow_requests r LEFT JOIN users rel ON rel.id=r.released_by LEFT JOIN users rec ON rec.id=r.received_by ORDER BY r.created_at DESC`,
   );
-  // Single query for items avoids one query per request; ownership predicate remains on both queries.
+  // Authenticated roles share the read-only dashboard; writes still require ownership.
   const items = await rows(
     db,
-    `SELECT i.* FROM borrow_request_items i JOIN borrow_requests r ON r.id=i.request_id ${user.role === "User" ? "WHERE r.user_id=?" : ""} ORDER BY i.id`,
-    user.role === "User" ? [user.id] : [],
+    "SELECT * FROM borrow_request_items ORDER BY id",
   );
+  const returns = await rows(
+    db,
+    "SELECT request_id,inspection,created_at FROM handover_returns WHERE kind='return' ORDER BY created_at,id",
+  );
+  const returnedAt = new Map<string, string>();
+  const quantities = new Map(
+    items.map((item) => [item.id, item.requested_qty]),
+  );
+  for (const event of returns) {
+    const inspection =
+      typeof event.inspection === "string"
+        ? JSON.parse(event.inspection)
+        : event.inspection;
+    for (const item of inspection) {
+      if (
+        !returnedAt.has(item.id) &&
+        item.returnedQty >= quantities.get(item.id)
+      )
+        returnedAt.set(item.id, event.created_at);
+    }
+  }
   return records.map((record) => ({
     ...record,
-    items: items.filter((i) => i.request_id === record.id),
+    items: items
+      .filter((i) => i.request_id === record.id)
+      .map((item) => ({
+        ...item,
+        returned_at: returnedAt.get(item.id) || null,
+      })),
   }));
 }

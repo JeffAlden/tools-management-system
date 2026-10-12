@@ -25,7 +25,28 @@ try {
       await db.query(statement);
     await db.execute("INSERT INTO schema_migrations(version) VALUES(1)");
   }
-  console.log("Schema version 1 ready; no business data imported.");
+  if (
+    !(await rows(db, "SELECT version FROM schema_migrations WHERE version=2"))
+      .length
+  ) {
+    // Check the column as DDL is not transactional; safe to retry after interruption.
+    const [column] = await rows(
+      db,
+      "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='deleted_at'",
+    );
+    if (!column) {
+      const sql = await readFile(
+        new URL(
+          "../../../database/migrations/002-account-deletion.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      );
+      await db.query(sql);
+    }
+    await db.execute("INSERT INTO schema_migrations(version) VALUES(2)");
+  }
+  console.log("Schema version 2 ready; no business data imported.");
 } finally {
   await db.query("SELECT RELEASE_LOCK('altech_tms_migration')");
   db.release();
