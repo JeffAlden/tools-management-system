@@ -109,7 +109,7 @@ npm run dev --workspace backend
 npm run dev --workspace frontend
 ```
 
-Or run both with `npm run dev`. Open http://localhost:5173. The Dashboard or Submit route opens the login page. Vite proxies `/api` to the backend. Camera capture requires HTTPS except on localhost. On other machines, `localhost` refers to that machine; use the same deployed instance to share records.
+Or run both with `npm run dev`. Open http://localhost:5173. Borrowers can submit without login; the Tools Dashboard requires staff login. Vite proxies `/api` to the backend. Camera capture requires HTTPS except on localhost. On other machines, `localhost` refers to that machine; use the same deployed instance to share records.
 
 ### 8. Sign in
 
@@ -128,6 +128,10 @@ After initial setup, start MySQL in XAMPP and run npm run dev from the project f
 A fresh office database is a separate system. For shared records across locations, use one deployed application and centralized database. If real credentials were committed to .env.example, remove them and change the exposed credentials.
 
 ## Build and test
+
+Borrowers submit requests without signing in. A borrower signature is required; guest submissions still use a session security token and rate limiting. Signed-in User, Admin, and Developer staff can review requests, hand over tools, and record returns regardless of who submitted the request.
+
+Application updates require `npm run db:migrate` before starting the new API. Migration 3 permits guest request/attachment ownership and changes existing six-digit references from `REQ123456` to `REQ-123456`. The Coolify deployment runs migrations at startup; managed-MySQL deployments must run them separately.
 
 Each account has one active authenticated session. A successful sign-in revokes earlier sessions for that account; their next protected request is denied. Use separate staff accounts rather than sharing credentials. Failed sign-ins do not revoke existing sessions.
 

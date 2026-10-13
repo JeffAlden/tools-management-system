@@ -3,7 +3,7 @@ import { Photo } from "../components/Photo";
 import { Signature } from "../components/Signature";
 import { api, multipart } from "../services/api";
 import { nowLocal } from "../utils/date";
-import type { BorrowRequest, User } from "../types";
+import type { BorrowRequest } from "../types";
 const emptyItem = () => ({
   key: crypto.randomUUID(),
   name: "",
@@ -11,13 +11,9 @@ const emptyItem = () => ({
   note: "",
 });
 export function BorrowerForm({
-  user,
-  login,
   notify,
   onSubmitted,
 }: {
-  user: User | null;
-  login: () => void;
   notify: (msg: string) => void;
   onSubmitted: () => void;
 }) {
@@ -43,17 +39,13 @@ export function BorrowerForm({
   }
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!user) {
-      login();
-      return;
-    }
     if (!signature) {
       notify("Borrower signature is required.");
       return;
     }
     setBusy(true);
     try {
-      const request = await api<BorrowRequest>("/requests", {
+      const request = await api<Pick<BorrowRequest, "id" | "reference" | "status">>("/requests", {
         method: "POST",
         body: multipart(
           {
@@ -286,7 +278,7 @@ export function BorrowerForm({
                 className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md"
               >
                 <i className="fas fa-paper-plane mr-2" />
-                {busy ? "Submitting…" : user ? "Submit" : "Sign in & Submit"}
+                {busy ? "Submitting…" : "Submit"}
               </button>
             </div>
           </fieldset>

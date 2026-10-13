@@ -98,7 +98,7 @@ export async function attach(
   db: DB,
   files: PreparedFile[],
   requestId: string,
-  userId: string,
+  userId: string | null,
   eventId: string | null = null,
 ) {
   for (const file of files)

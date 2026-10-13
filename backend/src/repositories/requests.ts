@@ -42,7 +42,7 @@ export async function listRequests(
     db,
     `SELECT r.*,CONCAT(rel.name,' (',rel.username,')') AS released_name,CONCAT(rec.name,' (',rec.username,')') AS received_name FROM borrow_requests r LEFT JOIN users rel ON rel.id=r.released_by LEFT JOIN users rec ON rec.id=r.received_by ORDER BY r.created_at DESC`,
   );
-  // Authenticated roles share the read-only dashboard; writes still require ownership.
+  // Authenticated staff roles share requests and process handovers and returns.
   const items = await rows(
     db,
     "SELECT * FROM borrow_request_items ORDER BY id",

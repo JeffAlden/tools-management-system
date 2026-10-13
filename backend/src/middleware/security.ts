@@ -89,10 +89,6 @@ export function roles(...allowed: Role[]) {
     next();
   };
 }
-export function assertAccess(user: User, request: Record<string, any>) {
-  if (user.role === "User" && request.user_id !== user.id)
-    throw new HttpError(404, "Request not found.");
-}
 export async function audit(
   db: DB,
   user: User | null,

@@ -46,7 +46,13 @@ try {
     }
     await db.execute("INSERT INTO schema_migrations(version) VALUES(2)");
   }
-  console.log("Schema version 2 ready; no business data imported.");
+  if (!(await rows(db, "SELECT version FROM schema_migrations WHERE version=3")).length) {
+    const sql = await readFile(new URL("../../../database/migrations/003-public-requests.sql", import.meta.url), "utf8");
+    for (const statement of sql.split(";").map((s) => s.trim()).filter(Boolean))
+      await db.query(statement);
+    await db.execute("INSERT INTO schema_migrations(version) VALUES(3)");
+  }
+  console.log("Schema version 3 ready.");
 } finally {
   await db.query("SELECT RELEASE_LOCK('altech_tms_migration')");
   db.release();

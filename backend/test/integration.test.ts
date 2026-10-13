@@ -236,6 +236,36 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
     requestDate: "2025-01-01T09:30:00+08:00",
     items: [{ name: "Free text drill", requestedQty: 3, note: "SN-123" }],
   };
+  const guest = supertest.agent(app);
+  const guestSession = await guest.get("/api/auth/session").expect(200);
+  assert.equal(guestSession.body.user, null);
+  await guest.post("/api/requests").set("Origin", origin)
+    .field("payload", JSON.stringify(payload)).expect(403);
+  await guest.post("/api/requests").set("Origin", origin)
+    .set("X-CSRF-Token", guestSession.body.csrf)
+    .field("payload", JSON.stringify(payload)).expect(400);
+  const guestCreated = await guest.post("/api/requests").set("Origin", origin)
+    .set("X-CSRF-Token", guestSession.body.csrf)
+    .field("payload", JSON.stringify(payload))
+    .attach("borrowerSignature", image, { filename: "signature.png", contentType: "image/png" })
+    .expect(201);
+  requestIds.push(guestCreated.body.id);
+  assert.match(guestCreated.body.reference, /^REQ-\d{6}$/);
+  assert.deepEqual(Object.keys(guestCreated.body).sort(), ["id", "reference", "status"]);
+  await guest.get("/api/requests").expect(401);
+  await guest.get("/api/requests/" + guestCreated.body.id).expect(401);
+  await guest.post("/api/requests/" + guestCreated.body.id + "/handover")
+    .set("Origin", origin).set("X-CSRF-Token", guestSession.body.csrf)
+    .field("payload", JSON.stringify({ version: 1 })).expect(401);
+  await guest.post("/api/requests/" + guestCreated.body.id + "/returns")
+    .set("Origin", origin).set("X-CSRF-Token", guestSession.body.csrf)
+    .field("payload", JSON.stringify({ version: 1, items: [] })).expect(401);
+  const guestRecord = await borrower.agent.get("/api/requests/" + guestCreated.body.id).expect(200);
+  assert.equal(guestRecord.body.user_id, null);
+  await guest.get("/api/attachments/" + guestRecord.body.attachments[0].id).expect(401);
+  await borrower.agent.post("/api/requests/" + guestCreated.body.id + "/handover")
+    .set("Origin", origin).set("X-CSRF-Token", borrower.csrf)
+    .field("payload", JSON.stringify({ version: 1 })).expect(200);
   const created = await borrower.agent
     .post("/api/requests")
     .set("Origin", origin)
@@ -251,7 +281,7 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
     })
     .expect(201);
   const request = created.body;
-  assert.match(request.reference, /^REQ\d{6}$/);
+  assert.match(request.reference, /^REQ-\d{6}$/);
   requestIds.push(request.id);
   assert.equal(request.status, "Pending Approval");
   const developerRequest = await developer.agent
@@ -308,15 +338,15 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
     .post("/api/requests/" + request.id + "/handover")
     .set("Origin", origin)
     .set("X-CSRF-Token", other.csrf)
-    .field("payload", JSON.stringify({ version: 1 }))
-    .expect(404);
+    .field("payload", JSON.stringify({ version: 99 }))
+    .expect(409);
   const handover = (actor: typeof admin) =>
     actor.agent
       .post("/api/requests/" + request.id + "/handover")
       .set("Origin", origin)
       .set("X-CSRF-Token", actor.csrf)
       .field("payload", JSON.stringify({ version: 1 }));
-  const concurrent = await Promise.all([handover(borrower), handover(admin)]);
+  const concurrent = await Promise.all([handover(other), handover(admin)]);
   assert.deepEqual(concurrent.map((r) => r.status).sort(), [200, 409]);
   const issued = concurrent.find((r) => r.status === 200)!.body;
   await other.agent
@@ -326,7 +356,7 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
     .field(
       "payload",
       JSON.stringify({
-        version: 2,
+        version: 99,
         items: [
           {
             id: issued.items[0].id,
@@ -337,7 +367,7 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
         ],
       }),
     )
-    .expect(404);
+    .expect(409);
   await borrower.agent
     .post("/api/requests/" + request.id + "/returns")
     .set("Origin", "http://untrusted.example")

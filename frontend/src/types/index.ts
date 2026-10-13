@@ -23,7 +23,7 @@ export type Attachment = {
   event_id: string | null;
 };
 export type BorrowRequest = {
-  user_id: string;
+  user_id: string | null;
   id: string;
   reference: string;
   borrower_name: string;

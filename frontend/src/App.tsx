@@ -186,8 +186,6 @@ export default function App() {
         )}
         {tab === "borrower" ? (
           <BorrowerForm
-            user={user}
-            login={() => setModal("login")}
             notify={setMessage}
             onSubmitted={() => {}}
           />

@@ -8,7 +8,6 @@ import {
   authenticated,
   roles,
   audit,
-  assertAccess,
   HttpError,
 } from "../middleware/security.js";
 import {
@@ -26,11 +25,10 @@ import {
 import { validateReturns } from "../services/workflow.js";
 import { uploadDir } from "../config/env.js";
 export const requestsRouter = Router();
-requestsRouter.use(authenticated);
-requestsRouter.get("/", async (req, res) =>
+requestsRouter.get("/", authenticated, async (req, res) =>
   res.json(await listRequests(pool, req.user!)),
 );
-requestsRouter.get("/:id", async (req, res) =>
+requestsRouter.get("/:id", authenticated, async (req, res) =>
   res.json(await getRequest(pool, id.parse(req.params.id), req.user!)),
 );
 requestsRouter.post(
@@ -62,8 +60,8 @@ requestsRouter.post(
           "INSERT INTO borrow_requests(id,reference,user_id,borrower_name,position,plate,request_date) VALUES(?,?,?,?,?,?,?)",
           [
             requestId,
-            "REQ" + randomInt(100000, 1000000),
-            req.user!.id,
+            "REQ-" + randomInt(100000, 1000000),
+            req.user?.id ?? null,
             input.borrowerName,
             input.position,
             input.plate,
@@ -81,10 +79,10 @@ requestsRouter.post(
             "INSERT INTO borrow_request_items(id,request_id,name,requested_qty,note) VALUES(?,?,?,?,?)",
             [randomUUID(), requestId, item.name, item.requestedQty, item.note],
           );
-        await attach(db, prepared, requestId, req.user!.id);
+        await attach(db, prepared, requestId, req.user?.id ?? null);
         await audit(
           db,
-          req.user!,
+          req.user ?? null,
           "Request submitted",
           `${input.items.length} items requested.`,
           requestId,
@@ -94,7 +92,12 @@ requestsRouter.post(
       await removeFiles(prepared);
       throw error;
     }
-    res.status(201).json(await getRequest(pool, requestId, req.user!));
+    if (req.user) {
+      res.status(201).json(await getRequest(pool, requestId, req.user));
+    } else {
+      const [receipt] = await rows(pool, "SELECT id,reference,status FROM borrow_requests WHERE id=?", [requestId]);
+      res.status(201).json(receipt);
+    }
   },
 );
 requestsRouter.post(
@@ -115,7 +118,6 @@ requestsRouter.post(
           [requestId],
         );
         if (!record) throw new HttpError(404, "Request not found.");
-        assertAccess(req.user!, record);
         if (
           record.status !== "Pending Approval" ||
           record.version !== input.version
@@ -172,7 +174,6 @@ requestsRouter.post(
           [requestId],
         );
         if (!record) throw new HttpError(404, "Request not found.");
-        assertAccess(req.user!, record);
         if (record.status !== "Issued" || record.version !== input.version)
           throw new HttpError(
             409,
@@ -234,7 +235,6 @@ attachmentsRouter.get("/:id", authenticated, async (req, res) => {
   );
   if (!file) throw new HttpError(404, "Attachment not found.");
   // All authenticated roles may inspect shared requests and their photos.
-  // Handover/return writes above continue to enforce request ownership for Users.
   res.set({
     "Content-Type": file.mime_type,
     "Cache-Control": "private, no-store",
