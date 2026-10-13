@@ -52,7 +52,15 @@ try {
       await db.query(statement);
     await db.execute("INSERT INTO schema_migrations(version) VALUES(3)");
   }
-  console.log("Schema version 3 ready.");
+  if (!(await rows(db, "SELECT version FROM schema_migrations WHERE version=4")).length) {
+    // DDL is not transactional; check each column so interrupted runs can resume.
+    for (const column of ["last_seen_at", "last_active_at"]) {
+      const existing = await rows(db, "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sessions' AND COLUMN_NAME=?", [column]);
+      if (!existing.length) await db.query(`ALTER TABLE sessions ADD COLUMN ${column} DATETIME(3) NULL`);
+    }
+    await db.execute("INSERT INTO schema_migrations(version) VALUES(4)");
+  }
+  console.log("Schema version 4 ready.");
 } finally {
   await db.query("SELECT RELEASE_LOCK('altech_tms_migration')");
   db.release();

@@ -91,6 +91,24 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
     admin = await authenticate(1),
     borrower = await authenticate(2),
     other = await authenticate(3);
+  await admin.agent.get("/api/users/presence").expect(403);
+  await borrower.agent.get("/api/users/presence").expect(403);
+  await supertest(app).get("/api/users/presence").expect(401);
+  await borrower.agent.post("/api/auth/heartbeat").set("Origin", origin)
+    .send({ active: true }).expect(403);
+  await borrower.agent.post("/api/auth/heartbeat").set("Origin", origin)
+    .set("X-CSRF-Token", borrower.csrf).send({ active: true }).expect(200);
+  const presenceOf = async () => (await developer.agent.get("/api/users/presence").expect(200))
+    .body.find((u: any) => u.id === users[2].id).presence;
+  assert.equal(await presenceOf(), "Online");
+  await pool.execute("UPDATE sessions SET last_active_at=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 6 MINUTE) WHERE user_id=?", [users[2].id]);
+  await borrower.agent.post("/api/auth/heartbeat").set("Origin", origin)
+    .set("X-CSRF-Token", borrower.csrf).send({ active: false }).expect(200);
+  assert.equal(await presenceOf(), "Idle");
+  await pool.execute("UPDATE sessions SET last_seen_at=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 2 MINUTE) WHERE user_id=?", [users[2].id]);
+  assert.equal(await presenceOf(), "Offline");
+  await borrower.agent.post("/api/auth/heartbeat").set("Origin", origin)
+    .set("X-CSRF-Token", borrower.csrf).send({ active: true }).expect(200);
   const createdUser = await developer.agent
     .post("/api/users")
     .set("Origin", origin)

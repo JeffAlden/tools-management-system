@@ -59,6 +59,14 @@ authRouter.post("/logout", authenticated, async (req, res) => {
   });
   res.json({ user: null, csrf: await createSession(res, null) });
 });
+authRouter.post("/heartbeat", authenticated, async (req, res) => {
+  const input = z.object({ active: z.boolean() }).strict().parse(req.body);
+  await pool.execute(
+    "UPDATE sessions SET last_seen_at=UTC_TIMESTAMP(3),last_active_at=IF(?,UTC_TIMESTAMP(3),last_active_at) WHERE token_hash=? AND user_id=? AND expires_at>UTC_TIMESTAMP(3)",
+    [input.active, req.session!.hash, req.user!.id],
+  );
+  res.json({ ok: true });
+});
 authRouter.post("/password", authenticated, loginLimiter, async (req, res) => {
   const input = z
     .object({

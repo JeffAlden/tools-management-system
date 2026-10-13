@@ -114,6 +114,14 @@ toolsRouter.post("/import", async (req, res) => {
 });
 export const usersRouter = Router();
 usersRouter.use(roles("Admin", "Developer"));
+usersRouter.get("/presence", roles("Developer"), async (_req, res) => {
+  res.json(await rows(pool, `SELECT u.id, CASE
+    WHEN u.active=0 OR MAX(s.last_seen_at) IS NULL OR MAX(s.last_seen_at)<DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 90 SECOND) THEN 'Offline'
+    WHEN MAX(s.last_active_at) IS NULL OR MAX(s.last_active_at)<DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 5 MINUTE) THEN 'Idle'
+    ELSE 'Online' END AS presence
+    FROM users u LEFT JOIN sessions s ON s.user_id=u.id AND s.expires_at>UTC_TIMESTAMP(3)
+    WHERE u.deleted_at IS NULL GROUP BY u.id,u.active`));
+});
 usersRouter.get("/", async (req, res) =>
   res.json(
     await rows(

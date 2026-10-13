@@ -66,6 +66,33 @@ export default function App() {
     };
   }, [user]);
   useEffect(() => {
+    if (!user) return;
+    let lastActivity = Date.now();
+    let sending = false;
+    const activity = () => { lastActivity = Date.now(); };
+    const heartbeat = async () => {
+      if (sending) return;
+      sending = true;
+      try {
+        await api("/auth/heartbeat", { method: "POST", body: JSON.stringify({
+          active: document.visibilityState === "visible" && Date.now() - lastActivity < 5 * 60000,
+        }) });
+      } catch { /* Missing heartbeat will eventually mark this session offline. */ }
+      finally { sending = false; }
+    };
+    const visibility = () => { if (document.visibilityState === "visible") activity(); void heartbeat(); };
+    const events = ["pointerdown", "pointermove", "keydown", "scroll"] as const;
+    for (const event of events) window.addEventListener(event, activity, { passive: true });
+    document.addEventListener("visibilitychange", visibility);
+    void heartbeat();
+    const timer = setInterval(() => { void heartbeat(); }, 30000);
+    return () => {
+      clearInterval(timer);
+      for (const event of events) window.removeEventListener(event, activity);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [user?.id]);
+  useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => setMessage(""), 10000);
     return () => clearTimeout(timer);
@@ -147,10 +174,11 @@ export default function App() {
                 )}
                 <button
                   onClick={() => setModal("password")}
-                  className="nav-button text-emerald-300"
-                  title="Change password"
+                  className={`nav-button whitespace-normal break-words text-left ${user.role === "Developer" ? "text-purple-300" : user.role === "Admin" ? "text-amber-300" : "text-emerald-300"}`}
+                  title={`${user.role} — Change password`}
+                  aria-label={`${user.name}, ${user.role}. Change password`}
                 >
-                  {user.name} ({user.role})
+                  {user.name}
                 </button>
                 <button
                   className="nav-button text-rose-300"

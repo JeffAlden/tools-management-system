@@ -10,3 +10,4 @@ test-uploads/
 *.log
 backups/
 .local/
+workspace-notes/

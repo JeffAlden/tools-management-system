@@ -129,6 +129,8 @@ A fresh office database is a separate system. For shared records across location
 
 ## Build and test
 
+Developer Account Control includes approximate session presence: green Online, amber Idle after five minutes without activity, red Offline after 90 seconds without a heartbeat or when no valid session remains, and gray Unknown when status cannot be fetched. Clients heartbeat every 30 seconds; the Developer-only presence list refreshes every 15 seconds. Background tab throttling or connectivity problems can affect accuracy. Account Active is a separate enabled/disabled setting. Migration 4 adds session presence timestamps and must run before deploying the updated API.
+
 Borrowers submit requests without signing in. A borrower signature is required; guest submissions still use a session security token and rate limiting. Signed-in User, Admin, and Developer staff can review requests, hand over tools, and record returns regardless of who submitted the request.
 
 Application updates require `npm run db:migrate` before starting the new API. Migration 3 permits guest request/attachment ownership and changes existing six-digit references from `REQ123456` to `REQ-123456`. The Coolify deployment runs migrations at startup; managed-MySQL deployments must run them separately.

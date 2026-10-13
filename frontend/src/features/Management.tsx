@@ -205,6 +205,24 @@ export function Accounts({
   notify: (message: string) => void;
 }) {
   const developer = current.role === "Developer";
+  const [presence, setPresence] = useState<Record<string, "Online" | "Offline" | "Idle">>({});
+  useEffect(() => {
+    if (!developer) return;
+    let mounted = true;
+    let checking = false;
+    async function refreshPresence() {
+      if (checking) return;
+      checking = true;
+      try {
+        const result = await api<{ id: string; presence: "Online" | "Offline" | "Idle" }[]>("/users/presence");
+        if (mounted) setPresence(Object.fromEntries(result.map((u) => [u.id, u.presence])));
+      } catch { if (mounted) setPresence({}); }
+      finally { checking = false; }
+    }
+    void refreshPresence();
+    const timer = setInterval(() => { void refreshPresence(); }, 15000);
+    return () => { mounted = false; clearInterval(timer); };
+  }, [developer]);
   const [users, setUsers] = useState<User[]>([]),
     [busy, setBusy] = useState(false),
     [target, setTarget] = useState<User | null>(null),
@@ -317,7 +335,7 @@ export function Accounts({
         <table className="data-table">
           <thead>
             <tr>
-              {["Username", "Name", "Role", "Active", "Account Actions"].map(
+              {["Username", "Name", "Role", "Active", ...(developer ? ["Presence"] : []), "Account Actions"].map(
                 (h) => (
                   <th key={h}>{h}</th>
                 ),
@@ -384,6 +402,14 @@ export function Accounts({
                     }
                   />
                 </td>
+                {developer && (
+                  <td>
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title="Online: recent activity. Idle: no activity for 5 minutes. Offline: no heartbeat for 90 seconds or no valid session.">
+                      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${presence[user.id] === "Online" ? "bg-emerald-500" : presence[user.id] === "Idle" ? "bg-amber-500" : presence[user.id] === "Offline" ? "bg-rose-500" : "bg-slate-300"}`} />
+                      {presence[user.id] || "Unknown"}
+                    </span>
+                  </td>
+                )}
                 <td>
                   {developer && (
                     <button
