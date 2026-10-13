@@ -173,6 +173,7 @@ function Camera({
         Photo.
       </p>
       <button
+        type="button"
         className="btn-primary w-full"
         disabled={!ready}
         onClick={capture}

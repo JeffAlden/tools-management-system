@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 export function Modal({
   title,
   onClose,
@@ -23,7 +24,8 @@ export function Modal({
       previous?.focus();
     };
   }, []);
-  return (
+  // Keep dialogs outside fieldsets, clipped containers and backdrop-filter ancestors.
+  return createPortal(
     <div
       className="mobile-modal fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
       onMouseDown={(e) => {
@@ -64,6 +66,7 @@ export function Modal({
         <div className="relative bg-slate-900 px-6 py-4 text-white flex justify-between items-center shrink-0">
           <h3 className={`font-bold text-base ${centered ? "w-full text-center px-5" : ""}`}>{title}</h3>
           <button
+            type="button"
             aria-label="Close dialog"
             onClick={onClose}
             className={`text-slate-400 hover:text-white ${centered ? "absolute right-6" : ""}`}
@@ -73,6 +76,7 @@ export function Modal({
         </div>
         <div className={`p-6 overflow-y-auto space-y-4 ${centered ? "text-center" : ""}`}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
