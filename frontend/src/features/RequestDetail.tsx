@@ -241,7 +241,10 @@ export function RequestDetail({
         ))}
       </div>
       {allowed && (pending || issued) && (
-        <fieldset disabled={busy} className="grid md:grid-cols-2 gap-6">
+        <fieldset
+          disabled={busy}
+          className={`grid gap-6 ${pending ? "w-full md:w-[calc(50%_-_0.75rem)] mx-auto" : "borrower-capture-grid md:grid-cols-2"}`}
+        >
           <Photo
             value={photo}
             onChange={setPhoto}
