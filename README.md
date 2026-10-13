@@ -54,9 +54,17 @@ Keep secrets private. `.env` is ignored by Git. The MySQL password is separate f
 
 ### 5. Create the tables
 
+The recommended option is to run the application migration:
+
 ```powershell
 npm run db:migrate
 ```
+
+For a manual clean database setup in MariaDB, run the standalone
+[`database/altech_tms.sql`](./database/altech_tms.sql) script from the MariaDB
+prompt with `SOURCE D:/path/to/tools-management-system/database/altech_tms.sql;`.
+It creates the `altech_tms` database and all application tables, but does not
+create the `tms_app` database login or the initial Developer account.
 
 Alternatively, set `MYSQL_ROOT_PASSWORD` and `MYSQL_PASSWORD` in `.env` and run:
 

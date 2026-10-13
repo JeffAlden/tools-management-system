@@ -10,3 +10,7 @@ test-uploads/
 *.log
 backups/
 .local/
+
+create.md
+README.md
+altech_tms.sql

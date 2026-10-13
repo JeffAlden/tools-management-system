@@ -286,7 +286,7 @@ export function BorrowerForm({
                 className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md"
               >
                 <i className="fas fa-paper-plane mr-2" />
-                {busy ? "Submitting…" : user ? "Submit" : "Sign in & Submit"}
+                {busy ? "Submitting…" : user ? "Submit" : "Submit"}
               </button>
             </div>
           </fieldset>

@@ -175,7 +175,7 @@ export function RequestDetail({
                   >
                     {[
                       "Not returned",
-                      "partial return",
+                      "Partial return",
                       "Returned",
                       "Not working",
                     ].map((s) => (
