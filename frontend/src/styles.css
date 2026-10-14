@@ -76,7 +76,7 @@ canvas.sig-canvas { max-width: 100%; display: block; }
 .borrower-capture-grid .sig-canvas {
   height: 136px;
 }
-.request-return-capture > div:last-child > div:first-child {
+.borrower-capture-grid > div:last-child > div:first-child {
   position: relative;
   justify-content: center;
   padding-inline: 3rem;
@@ -85,7 +85,7 @@ canvas.sig-canvas { max-width: 100%; display: block; }
 .request-return-capture > div:first-child > label {
   text-align: center;
 }
-.request-return-capture > div:last-child > div:first-child > button {
+.borrower-capture-grid > div:last-child > div:first-child > button {
   position: absolute;
   right: 0;
 }
@@ -99,12 +99,12 @@ canvas.sig-canvas { max-width: 100%; display: block; }
     min-height: 176px;
   }
   .borrower-capture-grid .sig-canvas { height: 172px; }
-  .request-return-capture > div:last-child > div:first-child {
+  .borrower-capture-grid > div:last-child > div:first-child {
     margin-top: auto;
     min-height: 34px;
     margin-bottom: 12px;
   }
-  .request-return-capture > div:last-child > div:last-child {
+  .borrower-capture-grid > div:last-child > div:last-child {
     margin-top: 0;
   }
 }
