@@ -82,7 +82,7 @@ canvas.sig-canvas { max-width: 100%; display: block; }
   padding-inline: 3rem;
   text-align: center;
 }
-.request-return-capture > div:first-child > label {
+.borrower-capture-grid > div:first-child > label {
   text-align: center;
 }
 .borrower-capture-grid > div:last-child > div:first-child > button {
