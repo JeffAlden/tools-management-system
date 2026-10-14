@@ -63,6 +63,7 @@ export function RequestDetail({
     <Modal
       wide
       title={`Borrow Request: ${request.borrower_name}`}
+      centered
       onClose={onClose}
     >
       <div className="flex flex-wrap gap-2">
@@ -96,12 +97,12 @@ export function RequestDetail({
           Received By: <b>{request.received_name || "Not Received Yet"}</b>
         </p>
       </div>
-      <div className="flex justify-between items-center gap-2">
+      <div className="flex flex-col items-center gap-2">
         <h4 className="section-title">Itemized Return & Condition Checklist</h4>
         {editable && (
           <button
             disabled={busy}
-            className="btn-secondary"
+            className="btn-secondary self-end"
             onClick={() =>
               setItems(
                 items.map((i, index) => ({
@@ -117,7 +118,7 @@ export function RequestDetail({
         )}
       </div>
       <div className="overflow-x-auto rounded-xl border">
-        <table className="data-table">
+        <table className="data-table request-detail-table">
           <thead>
             <tr>
               {[
@@ -243,7 +244,7 @@ export function RequestDetail({
       {allowed && (pending || issued) && (
         <fieldset
           disabled={busy}
-          className={`grid gap-6 ${pending ? "w-full md:w-[calc(50%_-_0.75rem)] mx-auto" : "borrower-capture-grid md:grid-cols-2"}`}
+          className={`grid gap-6 ${pending ? "w-full md:w-[calc(50%_-_0.75rem)] mx-auto" : "borrower-capture-grid request-return-capture md:grid-cols-2"}`}
         >
           <Photo
             value={photo}
@@ -258,7 +259,7 @@ export function RequestDetail({
           )}
         </fieldset>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t">
+      <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t">
         <button className="btn-secondary" onClick={onClose}>
           Close
         </button>

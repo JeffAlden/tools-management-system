@@ -6,12 +6,14 @@ export function Modal({
   children,
   wide = false,
   centered = false,
+  expanded = false,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
   centered?: boolean;
+  expanded?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -61,10 +63,14 @@ export function Modal({
             }
           }
         }}
-        className={`bg-white rounded-2xl shadow-2xl ${wide ? "max-w-5xl" : "max-w-md"} w-full overflow-hidden border border-slate-100 max-h-[90dvh] flex flex-col`}
+        className={`bg-white rounded-2xl shadow-2xl ${expanded ? "max-w-[1440px]" : wide ? "max-w-5xl" : "max-w-md"} w-full overflow-hidden border border-slate-100 max-h-[90dvh] flex flex-col`}
       >
         <div className="relative bg-slate-900 px-6 py-4 text-white flex justify-between items-center shrink-0">
-          <h3 className={`font-bold text-base ${centered ? "w-full text-center px-5" : ""}`}>{title}</h3>
+          <h3
+            className={`font-bold text-base ${centered ? "w-full text-center px-5" : ""}`}
+          >
+            {title}
+          </h3>
           <button
             type="button"
             aria-label="Close dialog"
@@ -74,7 +80,11 @@ export function Modal({
             <i className="fas fa-times" />
           </button>
         </div>
-        <div className={`p-6 overflow-y-auto space-y-4 ${centered ? "text-center" : ""}`}>{children}</div>
+        <div
+          className={`p-6 overflow-y-auto space-y-4 ${centered ? "text-center" : ""}`}
+        >
+          {children}
+        </div>
       </div>
     </div>,
     document.body,

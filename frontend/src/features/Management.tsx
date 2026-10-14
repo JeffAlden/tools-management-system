@@ -276,11 +276,12 @@ export function Accounts({
     <Modal
       wide
       title={developer ? "Developer Account Control" : "User Accounts"}
+      centered
       onClose={onClose}
     >
       <form
         onSubmit={create}
-        className="bg-slate-50 p-4 rounded-xl border space-y-3"
+        className="account-create-form bg-slate-50 p-4 rounded-xl border space-y-3"
       >
         <h4 className="section-title">Add New Authorized Account</h4>
         <div className="grid sm:grid-cols-3 gap-2">
@@ -316,7 +317,7 @@ export function Accounts({
           Passwords require 12–128 characters, uppercase, lowercase, number and
           symbol.
         </p>
-        <div className="flex justify-between">
+        <div className="flex flex-wrap justify-end gap-3">
           <select
             name="role"
             aria-label="New account role"
@@ -332,10 +333,10 @@ export function Accounts({
         </div>
       </form>
       <div className="overflow-x-auto">
-        <table className="data-table">
+        <table className="data-table account-control-table">
           <thead>
             <tr>
-              {["Username", "Name", "Role", "Active", ...(developer ? ["Presence"] : []), "Account Actions"].map(
+              {["Username", "Name", "Role", "Active", ...(developer ? ["Status"] : []), "Account Actions"].map(
                 (h) => (
                   <th key={h}>{h}</th>
                 ),

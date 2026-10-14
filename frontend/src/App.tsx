@@ -169,7 +169,7 @@ export default function App() {
                     aria-label="Manage users"
                   >
                     <i className="fas fa-user-shield" />
-                    <span className="hidden md:inline ml-1">Users</span>
+                    <span className="hidden md:inline ml-1">Members</span>
                   </button>
                 )}
                 <button

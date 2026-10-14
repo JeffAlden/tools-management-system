@@ -76,6 +76,19 @@ canvas.sig-canvas { max-width: 100%; display: block; }
 .borrower-capture-grid .sig-canvas {
   height: 136px;
 }
+.request-return-capture > div:last-child > div:first-child {
+  position: relative;
+  justify-content: center;
+  padding-inline: 3rem;
+  text-align: center;
+}
+.request-return-capture > div:first-child > label {
+  text-align: center;
+}
+.request-return-capture > div:last-child > div:first-child > button {
+  position: absolute;
+  right: 0;
+}
 @media (min-width: 768px) {
   .borrower-capture-grid > div:last-child > div:last-child {
     margin-top: auto;
@@ -86,6 +99,14 @@ canvas.sig-canvas { max-width: 100%; display: block; }
     min-height: 176px;
   }
   .borrower-capture-grid .sig-canvas { height: 172px; }
+  .request-return-capture > div:last-child > div:first-child {
+    margin-top: auto;
+    min-height: 34px;
+    margin-bottom: 12px;
+  }
+  .request-return-capture > div:last-child > div:last-child {
+    margin-top: 0;
+  }
 }
 .responsive-main {
   width: min(100%, 80rem);
@@ -113,6 +134,21 @@ canvas.sig-canvas { max-width: 100%; display: block; }
   .badge {
     @apply px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-semibold;
   }
+  .admin-name-badge {
+    @apply inline-block max-w-48 break-words rounded-lg border px-2.5 py-1 text-[11px] font-semibold;
+  }
+  .admin-name-developer {
+    @apply border-purple-200 bg-purple-100 text-purple-800;
+  }
+  .admin-name-admin {
+    @apply border-amber-200 bg-amber-100 text-amber-800;
+  }
+  .admin-name-user {
+    @apply border-emerald-200 bg-emerald-100 text-emerald-800;
+  }
+  .admin-name-unknown {
+    @apply border-slate-200 bg-slate-100 text-slate-700;
+  }
   .data-table {
     @apply w-full text-left text-xs border-collapse;
   }
@@ -124,6 +160,24 @@ canvas.sig-canvas { max-width: 100%; display: block; }
   }
   .data-table tbody tr:hover {
     @apply bg-slate-50;
+  }
+  .request-records th,
+  .request-records td,
+  .inventory-overview th,
+  .inventory-overview td,
+  .account-control-table th,
+  .account-control-table td,
+  .request-detail-table th,
+  .request-detail-table td {
+    @apply text-center align-middle;
+  }
+  .account-create-form .input,
+  .account-control-table .input,
+  .request-detail-table .input {
+    @apply text-center;
+  }
+  .inventory-overview th {
+    @apply whitespace-nowrap;
   }
   .empty {
     @apply p-8 text-center text-xs font-semibold text-slate-400;

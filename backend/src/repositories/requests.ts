@@ -3,7 +3,7 @@ import { HttpError, type User } from "../middleware/security.js";
 export async function getRequest(db: DB, id: string, user: User) {
   const [record] = await rows(
     db,
-    `SELECT r.*,rel.name AS released_name,rec.name AS received_name FROM borrow_requests r LEFT JOIN users rel ON rel.id=r.released_by LEFT JOIN users rec ON rec.id=r.received_by WHERE r.id=?`,
+    `SELECT r.*,rel.name AS released_name,rel.role AS released_role,rec.name AS received_name,rec.role AS received_role FROM borrow_requests r LEFT JOIN users rel ON rel.id=r.released_by LEFT JOIN users rec ON rec.id=r.received_by WHERE r.id=?`,
     [id],
   );
   if (!record) throw new HttpError(404, "Request not found.");
@@ -40,7 +40,7 @@ export async function listRequests(
 ): Promise<(Record<string, any> & { items: Record<string, any>[] })[]> {
   const records = await rows(
     db,
-    `SELECT r.*,rel.name AS released_name,rec.name AS received_name FROM borrow_requests r LEFT JOIN users rel ON rel.id=r.released_by LEFT JOIN users rec ON rec.id=r.received_by ORDER BY r.created_at DESC`,
+    `SELECT r.*,rel.name AS released_name,rel.role AS released_role,rec.name AS received_name,rec.role AS received_role FROM borrow_requests r LEFT JOIN users rel ON rel.id=r.released_by LEFT JOIN users rec ON rec.id=r.received_by ORDER BY r.created_at DESC`,
   );
   // Authenticated staff roles share requests and process handovers and returns.
   const items = await rows(

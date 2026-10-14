@@ -33,7 +33,9 @@ export type BorrowRequest = {
   borrow_date: string | null;
   return_date: string | null;
   released_name: string | null;
+  released_role?: Role | null;
   received_name: string | null;
+  received_role?: Role | null;
   status: "Pending Approval" | "Issued" | "Completed";
   version: number;
   items: Item[];

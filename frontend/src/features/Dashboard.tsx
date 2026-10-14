@@ -6,7 +6,16 @@ import { api, report } from "../services/api";
 import { formatDate, localDate, possession } from "../utils/date";
 import { RequestDetail } from "./RequestDetail";
 import { Catalog } from "./Management";
-import type { BorrowRequest, Log, User } from "../types";
+import type { BorrowRequest, Log, Role, User } from "../types";
+
+function adminNameClass(role?: Role | null) {
+  const colors = {
+    Developer: "admin-name-developer",
+    Admin: "admin-name-admin",
+    User: "admin-name-user",
+  };
+  return `admin-name-badge ${role ? colors[role] : "admin-name-unknown"}`;
+}
 export function Dashboard({
   user,
   notify,
@@ -119,15 +128,15 @@ export function Dashboard({
         ].map((k) => (
           <div
             key={k.label}
-            className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between"
+            className="relative bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-center"
           >
-            <div>
+            <div className="w-full px-12 text-center">
               <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 {k.label}
               </p>
               <p className="text-2xl font-black mt-0.5">{k.count}</p>
             </div>
-            <div className={`kpi-${k.color} p-3 rounded-xl`}>
+            <div className={`kpi-${k.color} absolute right-4 p-3 rounded-xl`}>
               <i className={`fas fa-${k.icon} text-lg`} />
             </div>
           </div>
@@ -153,7 +162,7 @@ export function Dashboard({
             className="btn-secondary"
             onClick={() => open("borrower-tools")}
           >
-            Borrower Added Tools
+            Equipment Registry
           </button>
           {admin && (
             <>
@@ -198,22 +207,22 @@ export function Dashboard({
         </div>
       </div>
       <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b bg-slate-50 flex justify-between gap-2">
+        <div className="px-6 py-4 border-b bg-slate-50 text-center">
           <h3 className="font-bold text-sm">
             <i className="fas fa-list-check text-indigo-600 mr-2" />
-            Equipment Borrow Requests & Returns Log
+            Equipment Issuance & Return Log
           </h3>
-          <span className="text-xs text-slate-400">Updates every 30s</span>
         </div>
         <div className="overflow-x-auto">
           <table className="data-table request-records">
             <thead>
               <tr>
                 {[
-                  "Req ID / Date",
-                  "Borrower Details",
+                  "Request Details",
+                  "Name",
                   "Items Summary",
-                  "Handover & Return Admin",
+                  "Issued By",
+                  "Received By",
                   "Status",
                   "Action",
                 ].map((h) => (
@@ -225,7 +234,7 @@ export function Dashboard({
               {filtered.map((r) => (
                 <tr key={r.id}>
                   <td
-                    data-label="Reference / Date"
+                    data-label="Request Details"
                     className="font-mono max-w-56 break-all"
                   >
                     <b>{r.reference}</b>
@@ -233,7 +242,7 @@ export function Dashboard({
                       {formatDate(r.request_date)}
                     </p>
                   </td>
-                  <td data-label="Borrower">
+                  <td data-label="Name">
                     <b>{r.borrower_name}</b>
                     <p className="text-[11px] text-slate-500">
                       {r.position} • {r.plate}
@@ -246,10 +255,29 @@ export function Dashboard({
                       </span>
                     ))}
                   </td>
-                  <td data-label="Handover / Return">
-                    Rel: {r.released_name || "-"}
-                    <br />
-                    Rec: {r.received_name || "-"}
+                  <td data-label="Issued By">
+                    {r.released_name ? (
+                      <span
+                        className={adminNameClass(r.released_role)}
+                        title={r.released_role || undefined}
+                      >
+                        {r.released_name}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
+                  </td>
+                  <td data-label="Received By">
+                    {r.received_name ? (
+                      <span
+                        className={adminNameClass(r.received_role)}
+                        title={r.received_role || undefined}
+                      >
+                        {r.received_name}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
                   </td>
                   <td data-label="Status">
                     <span
@@ -326,40 +354,46 @@ export function Dashboard({
       {modal === "borrower-tools" && (
         <Modal
           wide
-          title="Tools Added by Borrowers"
+          title="Tools and Equipment Inventory Overview"
+          centered
+          expanded
           onClose={() => setModal("")}
         >
-          <input
-            className="input"
-            aria-label="Search borrower added tools"
-            placeholder="Search borrower, request number, or tool..."
-            value={toolSearch}
-            onChange={(e) => setToolSearch(e.target.value)}
-          />
+          <div className="flex justify-center">
+            <input
+              className="input max-w-xl text-center"
+              aria-label="Search borrower added tools"
+              placeholder="Search borrower, request number, or tool..."
+              value={toolSearch}
+              onChange={(e) => setToolSearch(e.target.value)}
+            />
+          </div>
           {admin && (
-            <button
-              className="btn-primary"
-              onClick={() => exportReport("borrower-tools")}
-            >
-              Export Tools
-            </button>
+            <div className="flex justify-end">
+              <button
+                className="btn-primary"
+                onClick={() => exportReport("borrower-tools")}
+              >
+                Export Tools
+              </button>
+            </div>
           )}
           <div className="overflow-x-auto">
-            <table className="data-table">
+            <table className="data-table inventory-overview">
               <thead>
                 <tr>
                   {[
-                    "Request",
-                    "Borrower",
-                    "Tool / Item",
+                    "Request No.",
+                    "Name",
+                    "Item",
                     "Requested",
                     "Returned",
-                    "Return Status",
-                    "Notes / Specification",
-                    "Requested Date / Time",
-                    "Returned Date / Time",
-                    "Current Possession",
-                    "Request to Return",
+                    "Status",
+                    "Notes",
+                    "Requested Date",
+                    "Returned Date",
+                    "TIME IN POSSESSION",
+                    "TOTAL BORROWING DURATION",
                   ].map((h) => (
                     <th key={h}>{h}</th>
                   ))}
