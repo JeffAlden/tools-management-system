@@ -1,74 +1,142 @@
 # ALTECH Tools Management System
 
-Shared tools and equipment borrowing system for ALTECH staff. Borrowers submit requests with quantities, photos and signatures. Admins manage the catalog, handovers, returns, reports and Regular User creation. Developers manage all accounts. Records are stored in MySQL and accessible across devices and locations for authorized users.
+A web app for recording who requested tools and equipment, who issued them, and when they were returned. It replaces scattered borrowing records with a shared log that authorized staff can search, review, and export.
 
-Stack: React / TypeScript / Vite / Tailwind (frontend), Express / TypeScript (API), MySQL. Passwords are hashed with Argon2id. Sessions and role checks are enforced on the backend. Attachments are private.
+Borrowers fill out a request with item quantities and a signature. Staff review the request, record the handover, inspect returned items, and keep photos and return history with the record. The app is intended for ALTECH teams managing equipment used for work and deployment.
 
-## Fresh installation: follow these steps in order
+## What the app includes
 
-No reference-backup folder or default Developer password is needed. Use this procedure for a new empty database. If the database already has users, skip initial-account setup and use an existing login.
+| Feature | What it is for |
+| --- | --- |
+| Borrower Request | Submit borrower details, items, quantities, notes, an optional photo, and the required borrower signature. |
+| Tools Dashboard | See request totals, pending requests, issued equipment, and completed returns. |
+| Equipment Issuance & Return Log | Search/filter requests and inspect their issue and return records. |
+| Issued By / Received By | Identify the staff involved, with role-colored name badges. |
+| Equipment Registry | View requested items, quantities, return status, dates, and durations across requests. |
+| Tools Catalog | Maintain tool codes, names, and total quantities; import/export catalog data. |
+| Reports and Activity Logs | Export records and review recorded actions. |
+| Members | Manage staff accounts according to your role. |
+| Generate QR | Provide a QR code linking to the borrower form. |
 
-### 1. Start MySQL
+## How to use the app
 
-Open XAMPP and start MySQL. Start Apache too if you use phpMyAdmin at http://localhost/phpmyadmin/. Keep MySQL running while using the application.
+### Submit a borrowing request
 
-### 2. Clone and install
+1. Open your team's app address and select **Borrower Request**. No login is required for this form.
+2. Enter your full name, position, vehicle/car plate, and request date/time.
+3. Enter each item's name, quantity, and any notes. Add another item if needed.
+4. Take or upload a photo if useful. Allow camera access when the browser asks.
+5. Draw your signature in the signature box. A borrower signature is required.
+6. Submit the form and keep the generated request number, such as `REQ-123456`.
 
-Requires Node 22.12+ (24 recommended), npm, and MySQL 8.4. XAMPP MariaDB 10.4 has been tested; MySQL 8.4 and production still require validation.
+The request appears as **Pending Approval**. Submitting a request does not issue the equipment automatically.
+
+### Sign in and issue equipment
+
+1. Select **Tools Dashboard** and use the login form with your application username and password.
+2. Search for the borrower, tool, or plate, or filter by date/status.
+3. Open the pending request using its action button. Review the borrower, items, quantities, photo, and signature.
+4. Capture or upload the **Admin Before-Handover Photo** if needed.
+5. Click **Confirm & Handover Tools** when the handover is ready.
+
+The request becomes **Issued**, and the app records the issuance time and staff member. User, Admin, and Developer accounts can perform this workflow.
+
+### Record a return
+
+1. Find an issued request and open it. Depending on your role, its action button is **Process Return** or **View Request**.
+2. Enter each item's returned quantity, return status, and condition notes.
+3. Use **Tag All Returned Completely** only when every listed item has been fully returned.
+4. Add the return condition photo and borrower return signature as appropriate.
+5. Click **Save Return Inspection**.
+
+Partial returns remain **Issued**. A fully completed return becomes **Completed** and its request detail is read-only. Photos and handover/return history remain available in the record.
+
+### Review the inventory and durations
+
+Select **Equipment Registry** to open **Tools and Equipment Inventory Overview**. Search by borrower, request number, or tool. 
+
+| Column | Meaning |
+| --- | --- |
+| TIME IN POSSESSION | Time from issuance until now for an item still out. Displays a dash after return, or `0 hrs (Not Issued)` before issuance. |
+| TOTAL BORROWING DURATION | Time from the original request until the item was returned, including the waiting time before issuance. Displays a dash until return. |
+
+Durations use whole hours, switching to days and hours after 24 hours. Requested Date and Returned Date display date and time despite their shorter headings.
+
+## Tech stack
+
+Versions below reflect the repository's package declarations and deployment files.
+
+| Area | Technology |
+| --- | --- |
+| Frontend | React 19, TypeScript 5.9, Vite 6, Tailwind CSS 4 |
+| UI assets | Font Awesome 6 icons and Inter font |
+| Backend | Node.js, Express 5, TypeScript |
+| Database | MySQL 8.4 in the supplied Docker configurations; `mysql2` database driver |
+
+### Install the app's packages
 
 ```powershell
-git clone https://github.com/JeffAlden/tools-management-system.git
-cd tools-management-system
 npm ci
-Copy-Item .env.example .env
 ```
 
-Run commands from the project root containing the main package.json. Do not overwrite an already configured .env. Stop running development servers with Ctrl+C before npm ci; on Windows they can lock dependency files and cause EPERM errors. Installing dependencies does not create the database or Developer account.
+Wait until PowerShell returns to its prompt without an error. This downloads the app's required packages. It does not create the database or a login account.
 
-### 3. Create the empty database and database account
+### Create an empty database and a database account
 
-In phpMyAdmin or an authorized MySQL connection, replace the password placeholder and run:
+In phpMyAdmin, select the **SQL** tab at the server level. Paste the SQL below, replacing `REPLACE_WITH_YOUR_DATABASE_PASSWORD` with a strong password you choose, then click **Go**. Do not use an apostrophe in the replacement unless you know how to escape it in SQL.
 
 ```sql
 CREATE DATABASE altech_tms CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'tms_app'@'127.0.0.1' IDENTIFIED BY '<choose-your-strong-database-password>';
+CREATE USER 'tms_app'@'127.0.0.1' IDENTIFIED BY 'REPLACE_WITH_YOUR_DATABASE_PASSWORD';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES ON altech_tms.* TO 'tms_app'@'127.0.0.1';
 ```
 
-### 4. Configure .env — not .env.example
+You should see `altech_tms` in the database list. Save the database password privately: you will need it in the next step. These statements require a database administrator connection. If the database/account already exists, use its existing configuration instead of rerunning this creation step.
 
-`.env.example` is a public template, not your active configuration. The backend reads `.env`. Never put real passwords in `.env.example` or commit them to GitHub. `MYSQL_USER` and `MYSQL_PASSWORD` identify the database account; they are not the username/password entered on the login screen.
+### Configure the app
 
-Edit `.env`:
+For a new installation only, copy the configuration template:
 
-- `MYSQL_HOST=127.0.0.1`
-- `MYSQL_PORT=3306`
-- `MYSQL_DATABASE=altech_tms`
-- `MYSQL_USER=tms_app`
-- `MYSQL_PASSWORD=<your database password>`
-- `APP_ORIGIN=http://localhost:5173`
-- `PORT=3001`
-- `UPLOAD_DIR=./uploads`
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
 
-Keep secrets private. `.env` is ignored by Git. The MySQL password is separate from application login passwords.
+In Notepad, update these lines. Replace the password placeholder with the exact database password from step 5. Keep the other template settings for local use.
 
-### 5. Create the tables
+```dotenv
+NODE_ENV=development
+PORT=3001
+APP_ORIGIN=http://localhost:5173
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_DATABASE=altech_tms
+MYSQL_USER=tms_app
+MYSQL_PASSWORD="REPLACE_WITH_YOUR_DATABASE_PASSWORD"
+MYSQL_SSL_CA=
+UPLOAD_DIR=./uploads
+TRUST_PROXY=0
+```
+
+Keep the database password inside the double quotes, especially if it contains `#` or spaces. Save and close Notepad. Leave `SETUP_USERNAME`, `SETUP_NAME`, and `SETUP_PASSWORD` blank in the file; the next account step supplies them temporarily.
+
+**Two different passwords:** `MYSQL_PASSWORD` lets the app connect to its database. Your password lets you sign in to the website. 
+
+### Create the database tables
 
 ```powershell
 npm run db:migrate
 ```
 
-Alternatively, set `MYSQL_ROOT_PASSWORD` and `MYSQL_PASSWORD` in `.env` and run:
+Wait for **Schema version 4 ready.** This creates the required tables and applies outstanding migrations. If it fails, check MySQL is running and verify the database settings from step 6 before continuing.
 
-```powershell
-docker compose --env-file .env -f deployment/compose.local.yml up -d
-```
+### Create the first Developer account
 
-before migration. Do not run two database servers on port 3306.
+This step runs once on a fresh database. There is no default login or default password.
 
-### 6. Create the first Developer (once only)
+Choose a username containing 3–64 letters, numbers, underscores, dots, or hyphens. Choose a password with 12–128 characters including an uppercase letter, lowercase letter, number, and symbol. Store your chosen login privately.
 
-Choose a password of 12–128 characters containing uppercase, lowercase, number, and symbol. Store it in a password manager. From the project root:
+Paste this complete block into PowerShell and enter the requested details:
 
 ```powershell
 $env:SETUP_USERNAME = Read-Host 'Choose Developer username'
@@ -83,105 +151,29 @@ try {
 }
 ```
 
-Setup stores only a password hash and aborts if any users already exist. Restored databases keep their existing accounts.
+Password characters are hidden while typing. Wait for **Initial Developer created**. Use the chosen username to log in, not the full display name. The script stores a password hash and removes its temporary setup variables afterward.
 
-Wait for **Initial Developer created**. Remember the username and password you chose; the full name is the display name. Password characters do not appear while typing. The PowerShell process variables above are temporary, so there is no need to store the Developer password in .env or .env.example. Without this step, a fresh database has no account and login cannot succeed.
+If you see **Setup refused: users already exist**, use an existing account. This protects an existing installation; restoring a database also restores its accounts.
 
-### 7. Start the application
-
-The easiest option starts frontend and backend together:
+### Start the app
 
 ```powershell
 npm run dev
 ```
 
-Keep this terminal open. Alternatively, start them separately as shown below.
+This starts the backend and frontend together. Keep the terminal open. Open **http://localhost:5173** in your browser, you should see the borrower form. Select **Tools Dashboard** and sign in using credentials.
 
-From the repository root, use two terminals:
+The backend uses port `3001`; the frontend uses port `5173` and forwards `/api` requests to the backend. If Vite chooses another port, free port 5173 and restart, or update `APP_ORIGIN` to the actual frontend address and restart the backend.
 
-```powershell
-# Terminal 1 – backend (http://localhost:3001)
-npm run dev --workspace backend
-```
+## Project folders
 
-```powershell
-# Terminal 2 – frontend (http://localhost:5173)
-npm run dev --workspace frontend
-```
+| Location | Contents |
+| --- | --- |
+| `frontend/` | Pages, UI components, styles, API client, and brand images. |
+| `backend/` | API routes, authentication, account roles, workflows, file storage, and tests. |
+| `database/` | Database schema and migrations. |
+| `deployment/` | Docker images, Caddy configuration, and local/production deployment files. |
+| `.env.example` | Public configuration template. |
+| `workspace-changes/` | Local Markdown change notes; excluded from Git. |
 
-Or run both with `npm run dev`. Open http://localhost:5173. Borrowers can submit without login; the Tools Dashboard requires staff login. Vite proxies `/api` to the backend. Camera capture requires HTTPS except on localhost. On other machines, `localhost` refers to that machine; use the same deployed instance to share records.
-
-### 8. Sign in
-
-Open **http://localhost:5173**, click **Tools Dashboard**, then the login button. Enter the Developer username and password chosen in step 6 and click Sign In. Use localhost consistently when APP_ORIGIN is http://localhost:5173; switching to 127.0.0.1 changes the origin and login requests will be rejected.
-
-## Everyday startup and troubleshooting
-
-After initial setup, start MySQL in XAMPP and run npm run dev from the project folder. Do not repeat npm ci or Developer setup every day. Run migrations when an application update requires them.
-
-- Connecting to the server: the frontend retries while the backend starts. Keep the terminal open and check its API errors. http://localhost:3001/api/health should return {"ok":true} when the API can reach MySQL.
-- Invalid username/password: use the application credentials chosen in step 6, not the MySQL account. A fresh database requires first-user setup.
-- EPERM during npm ci: stop all project development servers using Ctrl+C and retry. If still locked, restart Windows and install before starting the application.
-- Existing users: setup intentionally refuses; log in with the existing account. Restoring a database backup preserves users and password hashes.
-- Photo storage: MySQL holds metadata; files live in backend/uploads for UPLOAD_DIR=./uploads. Back up and restore both. Git does not contain uploaded images.
-
-A fresh office database is a separate system. For shared records across locations, use one deployed application and centralized database. If real credentials were committed to .env.example, remove them and change the exposed credentials.
-
-## Build and test
-
-Developer Account Control includes approximate session presence: green Online, amber Idle after five minutes without activity, red Offline after 90 seconds without a heartbeat or when no valid session remains, and gray Unknown when status cannot be fetched. Clients heartbeat every 30 seconds; the Developer-only presence list refreshes every 15 seconds. Background tab throttling or connectivity problems can affect accuracy. Account Active is a separate enabled/disabled setting. Migration 4 adds session presence timestamps and must run before deploying the updated API.
-
-Borrowers submit requests without signing in. A borrower signature is required; guest submissions still use a session security token and rate limiting. Signed-in User, Admin, and Developer staff can review requests, hand over tools, and record returns regardless of who submitted the request.
-
-Application updates require `npm run db:migrate` before starting the new API. Migration 3 permits guest request/attachment ownership and changes existing six-digit references from `REQ123456` to `REQ-123456`. The Coolify deployment runs migrations at startup; managed-MySQL deployments must run them separately.
-
-Each account has one active authenticated session. A successful sign-in revokes earlier sessions for that account; their next protected request is denied. Use separate staff accounts rather than sharing credentials. Failed sign-ins do not revoke existing sessions.
-
-```powershell
-npm run build
-npm test
-```
-
-Integration tests require a separate disposable database named `altech_tms_test`. Configure its connection via process environment variables, migrate it, then run `npm run test:integration`. Never test against business data. GitHub CI provides an isolated MySQL 8.4 service.
-
-## Project layout
-
-- `frontend/` – UI, components, API client, and required brand images
-- `backend/` – authentication, roles, REST endpoints, workflows, uploads, and tests
-- `database/` – schema and initialization notes
-- `deployment/` – Docker, HTTPS, and local/production configuration
-
-Production requires HTTPS, restricted MySQL access, DB TLS CA, private persistent uploads, and secure environment variables. Back up SQL and uploads together. After migrations, runtime database privileges should be limited to `SELECT`, `INSERT`, `UPDATE`, and `DELETE`. A single API instance is supported, horizontal scaling needs shared rate limiting and storage.
-
-Environment variable names are listed in `.env.example`. Secrets, `node_modules`, builds, uploads, logs, and backups are excluded from Git.
-
-## Contabo VPS with Coolify
-
-Use Ubuntu 24.04 and self-hosted Coolify. Add this repository as a Git-based Docker Compose application, branch `main`, base directory `/`, Compose location `/docker-compose.yaml`. This file builds three services: `web`, `api`, and private MySQL 8.4. Coolify terminates HTTPS; the web container serves the frontend and forwards `/api` to the backend. MySQL requires TLS; only its public CA is shared with the API. MySQL is bound only to VPS loopback `127.0.0.1:13306` for SSH-tunneled desktop access. Neither the API nor database has a public port.
-
-After loading the Compose file, review these runtime environment variables in Coolify:
-
-- `APP_ORIGIN` is fixed in the Compose file to `https://www.jeffreypalino.com` (no trailing slash); it does not require editing in Coolify.
-- `SERVICE_PASSWORD_64_MYSQL`: Coolify automatically generates this 64-character password for the application's database user.
-- `SERVICE_PASSWORD_64_MYSQLROOT`: Coolify automatically generates a separate 64-character password for database administration.
-
-The Compose file sets `APP_ORIGIN` to `https://www.jeffreypalino.com`; edit that non-secret value in the repository if using another address. Coolify stores generated passwords privately and reuses them across deployments. The same generated application password is passed to MySQL initialization and the API, so no manual SQL password matching is required. Keep the generated values in a password manager. MySQL initialization variables apply only when its data volume is empty; changing them later does not change existing database passwords. Existing installations must retain their current passwords when switching variable names; automatic generation is intended for fresh installations.
-
-Point your domain's DNS A record to the VPS public IPv4 address. Assign the HTTPS domain to the `web` service, internal port `80`, only. Leave `api` and `mysql` without public domains. Allow public HTTP/HTTPS to Coolify's proxy. Save, load the Compose file, and deploy. The API runs migrations before starting; it does not create any users or import legacy data.
-
-Once deployment is healthy, open the `api` container's Terminal in Coolify and run this Bash-compatible setup sequence. Enter your chosen Developer account details when prompted; the password is hidden and isn't placed in shell history:
-
-```bash
-read -r -p 'Developer username: ' SETUP_USERNAME
-read -r -p 'Full name: ' SETUP_NAME
-read -r -s -p 'Developer password: ' SETUP_PASSWORD; echo
-export SETUP_USERNAME SETUP_NAME SETUP_PASSWORD
-node backend/dist/scripts/setup.js
-unset SETUP_USERNAME SETUP_NAME SETUP_PASSWORD
-```
-
-The password must satisfy the application's account validation (12–128 characters, uppercase, lowercase, number, and symbol). Setup refuses when users already exist. Log in through the application dashboard with this account. Coolify's administrator account is separate.
-
-Named volumes preserve `mysql_data`, `mysql_ca`, and `uploads` across ordinary redeployments. Do not delete these volumes when updating. Volume persistence is not a backup: export MySQL using `mysqldump --single-transaction --no-tablespaces` and copy the uploads volume to separate storage regularly. To restore, stop the API, import SQL into the same schema, restore the uploads files with the API user's ownership, then restart. Keep the database CA volume with the associated database volume; never regenerate or discard it independently. The database user needs schema privileges for startup migrations; a stricter runtime-only account requires running migrations separately.
-
-This Coolify configuration requires deployment verification on the VPS; a local frontend/backend build does not verify Docker networking, MySQL TLS, HTTPS, or persistence. Existing managed-MySQL deployments can continue using `deployment/compose.production.yml`.
+Secrets, installed packages, generated builds, uploads, logs, backups, and local change notes are excluded from Git by `.gitignore`.
