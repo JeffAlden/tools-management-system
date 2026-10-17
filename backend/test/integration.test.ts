@@ -7,6 +7,7 @@ import supertest from "supertest";
 import { unlink } from "node:fs/promises";
 import path from "node:path";
 import ExcelJS from "exceljs";
+import { imageWidths, imageVariantKey } from "../src/services/images.js";
 // Only a dedicated disposable MySQL database may run this suite.
 if (process.env.MYSQL_DATABASE !== "altech_tms_test")
   throw new Error(
@@ -33,7 +34,11 @@ after(async () => {
       [requestId],
     );
     for (const file of files)
-      await unlink(path.join(uploadDir, file.storage_key)).catch(() => {});
+      for (const key of [
+        file.storage_key,
+        ...imageWidths.map((w) => imageVariantKey(file.storage_key, w)),
+      ])
+        await unlink(path.join(uploadDir, key)).catch(() => {});
     await pool.execute("DELETE FROM activity_logs WHERE request_id=?", [
       requestId,
     ]);
@@ -94,21 +99,44 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
   await admin.agent.get("/api/users/presence").expect(403);
   await borrower.agent.get("/api/users/presence").expect(403);
   await supertest(app).get("/api/users/presence").expect(401);
-  await borrower.agent.post("/api/auth/heartbeat").set("Origin", origin)
-    .send({ active: true }).expect(403);
-  await borrower.agent.post("/api/auth/heartbeat").set("Origin", origin)
-    .set("X-CSRF-Token", borrower.csrf).send({ active: true }).expect(200);
-  const presenceOf = async () => (await developer.agent.get("/api/users/presence").expect(200))
-    .body.find((u: any) => u.id === users[2].id).presence;
+  await borrower.agent
+    .post("/api/auth/heartbeat")
+    .set("Origin", origin)
+    .send({ active: true })
+    .expect(403);
+  await borrower.agent
+    .post("/api/auth/heartbeat")
+    .set("Origin", origin)
+    .set("X-CSRF-Token", borrower.csrf)
+    .send({ active: true })
+    .expect(200);
+  const presenceOf = async () =>
+    (await developer.agent.get("/api/users/presence").expect(200)).body.find(
+      (u: any) => u.id === users[2].id,
+    ).presence;
   assert.equal(await presenceOf(), "Online");
-  await pool.execute("UPDATE sessions SET last_active_at=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 6 MINUTE) WHERE user_id=?", [users[2].id]);
-  await borrower.agent.post("/api/auth/heartbeat").set("Origin", origin)
-    .set("X-CSRF-Token", borrower.csrf).send({ active: false }).expect(200);
+  await pool.execute(
+    "UPDATE sessions SET last_active_at=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 6 MINUTE) WHERE user_id=?",
+    [users[2].id],
+  );
+  await borrower.agent
+    .post("/api/auth/heartbeat")
+    .set("Origin", origin)
+    .set("X-CSRF-Token", borrower.csrf)
+    .send({ active: false })
+    .expect(200);
   assert.equal(await presenceOf(), "Idle");
-  await pool.execute("UPDATE sessions SET last_seen_at=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 2 MINUTE) WHERE user_id=?", [users[2].id]);
+  await pool.execute(
+    "UPDATE sessions SET last_seen_at=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 2 MINUTE) WHERE user_id=?",
+    [users[2].id],
+  );
   assert.equal(await presenceOf(), "Offline");
-  await borrower.agent.post("/api/auth/heartbeat").set("Origin", origin)
-    .set("X-CSRF-Token", borrower.csrf).send({ active: true }).expect(200);
+  await borrower.agent
+    .post("/api/auth/heartbeat")
+    .set("Origin", origin)
+    .set("X-CSRF-Token", borrower.csrf)
+    .send({ active: true })
+    .expect(200);
   const createdUser = await developer.agent
     .post("/api/users")
     .set("Origin", origin)
@@ -257,33 +285,61 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
   const guest = supertest.agent(app);
   const guestSession = await guest.get("/api/auth/session").expect(200);
   assert.equal(guestSession.body.user, null);
-  await guest.post("/api/requests").set("Origin", origin)
-    .field("payload", JSON.stringify(payload)).expect(403);
-  await guest.post("/api/requests").set("Origin", origin)
-    .set("X-CSRF-Token", guestSession.body.csrf)
-    .field("payload", JSON.stringify(payload)).expect(400);
-  const guestCreated = await guest.post("/api/requests").set("Origin", origin)
+  await guest
+    .post("/api/requests")
+    .set("Origin", origin)
+    .field("payload", JSON.stringify(payload))
+    .expect(403);
+  await guest
+    .post("/api/requests")
+    .set("Origin", origin)
     .set("X-CSRF-Token", guestSession.body.csrf)
     .field("payload", JSON.stringify(payload))
-    .attach("borrowerSignature", image, { filename: "signature.png", contentType: "image/png" })
+    .expect(400);
+  const guestCreated = await guest
+    .post("/api/requests")
+    .set("Origin", origin)
+    .set("X-CSRF-Token", guestSession.body.csrf)
+    .field("payload", JSON.stringify(payload))
+    .attach("borrowerSignature", image, {
+      filename: "signature.png",
+      contentType: "image/png",
+    })
     .expect(201);
   requestIds.push(guestCreated.body.id);
   assert.match(guestCreated.body.reference, /^REQ-\d{6}$/);
-  assert.deepEqual(Object.keys(guestCreated.body).sort(), ["id", "reference", "status"]);
+  assert.deepEqual(Object.keys(guestCreated.body).sort(), [
+    "id",
+    "reference",
+    "status",
+  ]);
   await guest.get("/api/requests").expect(401);
   await guest.get("/api/requests/" + guestCreated.body.id).expect(401);
-  await guest.post("/api/requests/" + guestCreated.body.id + "/handover")
-    .set("Origin", origin).set("X-CSRF-Token", guestSession.body.csrf)
-    .field("payload", JSON.stringify({ version: 1 })).expect(401);
-  await guest.post("/api/requests/" + guestCreated.body.id + "/returns")
-    .set("Origin", origin).set("X-CSRF-Token", guestSession.body.csrf)
-    .field("payload", JSON.stringify({ version: 1, items: [] })).expect(401);
-  const guestRecord = await borrower.agent.get("/api/requests/" + guestCreated.body.id).expect(200);
+  await guest
+    .post("/api/requests/" + guestCreated.body.id + "/handover")
+    .set("Origin", origin)
+    .set("X-CSRF-Token", guestSession.body.csrf)
+    .field("payload", JSON.stringify({ version: 1 }))
+    .expect(401);
+  await guest
+    .post("/api/requests/" + guestCreated.body.id + "/returns")
+    .set("Origin", origin)
+    .set("X-CSRF-Token", guestSession.body.csrf)
+    .field("payload", JSON.stringify({ version: 1, items: [] }))
+    .expect(401);
+  const guestRecord = await borrower.agent
+    .get("/api/requests/" + guestCreated.body.id)
+    .expect(200);
   assert.equal(guestRecord.body.user_id, null);
-  await guest.get("/api/attachments/" + guestRecord.body.attachments[0].id).expect(401);
-  await borrower.agent.post("/api/requests/" + guestCreated.body.id + "/handover")
-    .set("Origin", origin).set("X-CSRF-Token", borrower.csrf)
-    .field("payload", JSON.stringify({ version: 1 })).expect(200);
+  await guest
+    .get("/api/attachments/" + guestRecord.body.attachments[0].id)
+    .expect(401);
+  await borrower.agent
+    .post("/api/requests/" + guestCreated.body.id + "/handover")
+    .set("Origin", origin)
+    .set("X-CSRF-Token", borrower.csrf)
+    .field("payload", JSON.stringify({ version: 1 }))
+    .expect(200);
   const created = await borrower.agent
     .post("/api/requests")
     .set("Origin", origin)
@@ -351,7 +407,22 @@ test("MySQL-backed security, request lifecycle, concurrency, private files and r
   await borrower.agent
     .get("/api/attachments/" + fileId)
     .expect(200)
-    .expect("Content-Type", /image\/png/);
+    .expect(
+      "Content-Type",
+      request.attachments[0].kind.endsWith("Signature")
+        ? /image\/png/
+        : /image\/webp/,
+    );
+  await supertest(app).get(`/api/attachments/${fileId}?width=300`).expect(401);
+  for (const width of imageWidths) {
+    const response = await borrower.agent
+      .get(`/api/attachments/${fileId}?width=${width}`)
+      .expect(200)
+      .expect("Content-Type", /image\/webp/)
+      .expect("Cache-Control", "private, no-store");
+    assert.equal((await sharp(response.body).metadata()).width, width);
+  }
+  await borrower.agent.get(`/api/attachments/${fileId}?width=999`).expect(400);
   await other.agent
     .post("/api/requests/" + request.id + "/handover")
     .set("Origin", origin)

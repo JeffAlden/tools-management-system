@@ -82,7 +82,7 @@ export function BorrowerForm({
           <div
             className="absolute inset-0 pointer-events-none bg-right bg-no-repeat bg-contain opacity-[.12]"
             style={{
-              backgroundImage: "url('/assets/00-altech-logo-blue-white.png')",
+              backgroundImage: "url('/assets/00-altech-logo-blue-white.webp')",
             }}
           />
           <div className="form-hero flex items-center justify-between relative z-10 gap-3">

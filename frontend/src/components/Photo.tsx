@@ -68,6 +68,7 @@ export function Photo({
           <>
             <img
               src={preview}
+              decoding="async"
               alt="Preview"
               className="max-h-40 mx-auto rounded-lg border border-slate-200 object-contain"
             />
@@ -148,15 +149,16 @@ function Camera({
     const v = video.current!;
     if (!v.videoWidth) return;
     const canvas = document.createElement("canvas");
-    canvas.width = v.videoWidth;
-    canvas.height = v.videoHeight;
-    canvas.getContext("2d")!.drawImage(v, 0, 0);
+    const scale = Math.min(1, 1200 / Math.max(v.videoWidth, v.videoHeight));
+    canvas.width = Math.round(v.videoWidth * scale);
+    canvas.height = Math.round(v.videoHeight * scale);
+    canvas.getContext("2d")!.drawImage(v, 0, 0, canvas.width, canvas.height);
     canvas.toBlob(
       (blob) => {
         if (blob) onCapture(blob);
       },
-      "image/jpeg",
-      0.85,
+      "image/webp",
+      0.8,
     );
   }
   return (

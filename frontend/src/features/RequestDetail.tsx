@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal } from "../components/Modal";
+import { AttachmentImage } from "../components/AttachmentImage";
 import { Photo } from "../components/Photo";
 import { Signature } from "../components/Signature";
 import { api, multipart } from "../services/api";
@@ -228,8 +229,8 @@ export function RequestDetail({
                   className="block w-full"
                   onClick={() => setLightbox(a.id)}
                 >
-                  <img
-                    src={`/api/attachments/${a.id}`}
+                  <AttachmentImage
+                    id={a.id}
                     alt={a.kind}
                     className="max-h-32 mx-auto rounded-lg bg-white border"
                   />
@@ -317,9 +318,10 @@ export function RequestDetail({
           title="Original Photo View"
           onClose={() => setLightbox(null)}
         >
-          <img
+          <AttachmentImage
+            preview
             alt="Attachment enlarged"
-            src={`/api/attachments/${lightbox}`}
+            id={lightbox}
             className="max-h-[70vh] mx-auto"
           />
         </Modal>

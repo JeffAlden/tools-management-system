@@ -165,6 +165,10 @@ This starts the backend and frontend together. Keep the terminal open. Open **ht
 
 The backend uses port `3001`; the frontend uses port `5173` and forwards `/api` requests to the backend. If Vite chooses another port, free port 5173 and restart, or update `APP_ORIGIN` to the actual frontend address and restart the backend.
 
+## Photo performance
+
+New photos are compressed to WebP with a maximum width of 1200 pixels. Signatures retain lossless PNG originals. Authenticated previews use 300px, 600px, or 1200px WebP variants; thumbnails load lazily and opened previews choose a size based on the screen. Existing attachments remain readable and get persisted preview variants when first requested. Back up the complete uploads folder, including variants. Storage remains on the configured private uploads volume; object storage and CDN delivery are not configured by this feature.
+
 ## Project folders
 
 | Location | Contents |

@@ -1,5 +1,10 @@
 import multer from "multer";
-import sharp from "sharp";
+import {
+  imageWidths,
+  imageVariantKey,
+  optimizeImage,
+  renderImageVariant,
+} from "./images.js";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
@@ -28,6 +33,7 @@ export type PreparedFile = {
   kind: string;
   key: string;
   size: number;
+  mime: string;
 };
 export async function prepareFiles(
   files: Express.Multer.File[],
@@ -37,32 +43,16 @@ export async function prepareFiles(
     await mkdir(uploadDir, { recursive: true, mode: 0o700 });
     for (const file of files) {
       let output: Buffer;
+      let mime: string;
+      let extension: string;
       try {
-        const decoder = sharp(file.buffer, { limitInputPixels: 20000000 });
-        const meta = await decoder.metadata();
-        if (
-          !["png", "jpeg", "webp"].includes(meta.format || "") ||
-          (meta.pages || 1) > 1
-        )
-          throw new Error("type");
-        if (file.fieldname.endsWith("Signature")) {
-          const stats = await decoder.stats();
-          if (
-            (meta.hasAlpha && stats.channels.at(-1)!.max === 0) ||
-            stats.channels.slice(0, 3).every((c) => c.min === 255)
-          )
-            throw new Error("blank signature");
-        }
-        output = await decoder
-          .rotate()
-          .resize({
-            width: 2000,
-            height: 2000,
-            fit: "inside",
-            withoutEnlargement: true,
-          })
-          .png()
-          .toBuffer();
+        const optimized = await optimizeImage(
+          file.buffer,
+          file.fieldname.endsWith("Signature"),
+        );
+        output = optimized.buffer;
+        mime = optimized.mime;
+        extension = optimized.extension;
       } catch {
         throw new HttpError(
           400,
@@ -74,14 +64,27 @@ export async function prepareFiles(
       const attachment = {
         id: randomUUID(),
         kind: file.fieldname,
-        key: randomUUID() + ".png",
+        key: randomUUID() + extension,
         size: output.length,
+        mime,
       };
+      prepared.push(attachment);
       await writeFile(path.join(uploadDir, attachment.key), output, {
         flag: "wx",
         mode: 0o600,
       });
-      prepared.push(attachment);
+      for (const width of imageWidths) {
+        const variant = await renderImageVariant(
+          output,
+          width,
+          file.fieldname.endsWith("Signature"),
+        );
+        await writeFile(
+          path.join(uploadDir, imageVariantKey(attachment.key, width)),
+          variant,
+          { flag: "wx", mode: 0o600 },
+        );
+      }
     }
     return prepared;
   } catch (error) {
@@ -91,7 +94,11 @@ export async function prepareFiles(
 }
 export async function removeFiles(files: PreparedFile[]) {
   await Promise.all(
-    files.map((f) => unlink(path.join(uploadDir, f.key)).catch(() => {})),
+    files.flatMap((f) =>
+      [f.key, ...imageWidths.map((w) => imageVariantKey(f.key, w))].map((key) =>
+        unlink(path.join(uploadDir, key)).catch(() => {}),
+      ),
+    ),
   );
 }
 export async function attach(
@@ -111,7 +118,7 @@ export async function attach(
         userId,
         file.kind,
         file.key,
-        "image/png",
+        file.mime,
         file.size,
       ],
     );

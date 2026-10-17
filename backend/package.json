@@ -9,7 +9,7 @@
     "start": "node dist/server.js",
     "migrate": "tsx src/scripts/migrate.ts",
     "setup": "tsx src/scripts/setup.ts",
-    "test": "tsx --test test/unit.test.ts",
+    "test": "tsx --test test/unit.test.ts test/images.test.ts",
     "test:integration": "tsx --test test/integration.test.ts"
   },
   "dependencies": {

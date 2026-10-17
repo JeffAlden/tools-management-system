@@ -50,13 +50,18 @@ body {
   font-family: "Inter", sans-serif;
   background-image:
     linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.4)),
-    url("/assets/company-scaled-1.png");
+    url("/assets/company-scaled-1.webp");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   min-height: 100vh;
   color: #1e293b;
+}
+@media (max-width: 640px) {
+  body {
+    background-image: linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.4)), url("/assets/company-scaled-1-800.webp");
+  }
 }
 canvas.sig-canvas {
   touch-action: none;

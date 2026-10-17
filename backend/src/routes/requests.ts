@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { randomUUID, randomInt } from "node:crypto";
 import path from "node:path";
+import { access, readFile, writeFile, rename, unlink } from "node:fs/promises";
+import {
+  imageWidths,
+  imageVariantKey,
+  renderImageVariant,
+} from "../services/images.js";
 import rateLimit from "express-rate-limit";
 import { pool, rows, transaction } from "../repositories/db.js";
 import { getRequest, listRequests } from "../repositories/requests.js";
@@ -57,20 +63,23 @@ requestsRouter.post(
         for (let attempt = 0; ; attempt++) {
           try {
             await db.execute(
-          "INSERT INTO borrow_requests(id,reference,user_id,borrower_name,position,plate,request_date) VALUES(?,?,?,?,?,?,?)",
-          [
-            requestId,
-            "REQ-" + randomInt(100000, 1000000),
-            req.user?.id ?? null,
-            input.borrowerName,
-            input.position,
-            input.plate,
-            new Date(input.requestDate),
-          ],
+              "INSERT INTO borrow_requests(id,reference,user_id,borrower_name,position,plate,request_date) VALUES(?,?,?,?,?,?,?)",
+              [
+                requestId,
+                "REQ-" + randomInt(100000, 1000000),
+                req.user?.id ?? null,
+                input.borrowerName,
+                input.position,
+                input.plate,
+                new Date(input.requestDate),
+              ],
             );
             break;
           } catch (error) {
-            if ((error as { code?: string }).code !== "ER_DUP_ENTRY" || attempt >= 19)
+            if (
+              (error as { code?: string }).code !== "ER_DUP_ENTRY" ||
+              attempt >= 19
+            )
               throw error;
           }
         }
@@ -95,7 +104,11 @@ requestsRouter.post(
     if (req.user) {
       res.status(201).json(await getRequest(pool, requestId, req.user));
     } else {
-      const [receipt] = await rows(pool, "SELECT id,reference,status FROM borrow_requests WHERE id=?", [requestId]);
+      const [receipt] = await rows(
+        pool,
+        "SELECT id,reference,status FROM borrow_requests WHERE id=?",
+        [requestId],
+      );
       res.status(201).json(receipt);
     }
   },
@@ -234,11 +247,43 @@ attachmentsRouter.get("/:id", authenticated, async (req, res) => {
     [id.parse(req.params.id)],
   );
   if (!file) throw new HttpError(404, "Attachment not found.");
+  let key = file.storage_key;
+  let mime = file.mime_type;
+  if (req.query.width !== undefined) {
+    const width = Number(req.query.width);
+    if (
+      typeof req.query.width !== "string" ||
+      !imageWidths.includes(width as (typeof imageWidths)[number])
+    )
+      throw new HttpError(400, "Image width must be 300, 600 or 1200.");
+    key = imageVariantKey(file.storage_key, width);
+    const variantPath = path.join(uploadDir, key);
+    try {
+      await access(variantPath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      // Older attachments get a persisted preview on first authenticated access.
+      const rendered = await renderImageVariant(
+        await readFile(path.join(uploadDir, file.storage_key)),
+        width,
+        file.kind.endsWith("Signature"),
+      );
+      // Write atomically so concurrent requests never observe a partial image.
+      const temporary = `${variantPath}.${randomUUID()}.tmp`;
+      try {
+        await writeFile(temporary, rendered, { flag: "wx", mode: 0o600 });
+        await rename(temporary, variantPath);
+      } finally {
+        await unlink(temporary).catch(() => {});
+      }
+    }
+    mime = "image/webp";
+  }
   // All authenticated roles may inspect shared requests and their photos.
   res.set({
-    "Content-Type": file.mime_type,
+    "Content-Type": mime,
     "Cache-Control": "private, no-store",
-    "Content-Disposition": 'inline; filename="attachment.png"',
+    "Content-Disposition": `inline; filename="attachment.${mime === "image/webp" ? "webp" : "png"}"`,
   });
-  res.sendFile(path.join(uploadDir, file.storage_key), { dotfiles: "allow" });
+  res.sendFile(path.join(uploadDir, key), { dotfiles: "allow" });
 });

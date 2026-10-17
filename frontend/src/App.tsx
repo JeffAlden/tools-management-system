@@ -131,7 +131,8 @@ export default function App() {
       <header className="app-header text-white shadow-lg sticky top-0 z-30 bg-[#002366]">
         <div className="nav-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <img
-            src="/assets/altech-logo.png"
+            src="/assets/altech-logo.webp"
+            decoding="async"
             alt="ALTECH - Your Key to Automation"
             className="brand-logo h-12 w-auto object-contain max-w-[230px]"
           />
