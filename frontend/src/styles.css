@@ -1,4 +1,30 @@
 @import "tailwindcss";
+.frosted-modal .field-label {
+  color: #f1f5f9;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 60%);
+}
+.frosted-modal .input {
+  background-color: transparent;
+  color: #0f172a;
+  caret-color: #0f172a;
+  text-shadow: none;
+}
+.frosted-modal .login-input-surface {
+  background-color: rgb(255 255 255 / 70%);
+  border-radius: 0.5rem;
+}
+.frosted-modal input:-webkit-autofill {
+  -webkit-text-fill-color: #0f172a;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.frosted-modal input:autofill {
+  background-clip: text;
+}
+.auth-access-card h3,
+.auth-access-card p {
+  text-shadow: 0 1px 3px rgb(0 0 0 / 85%);
+}
 .app-toasts {
   position: fixed;
   right: max(1rem, env(safe-area-inset-right));

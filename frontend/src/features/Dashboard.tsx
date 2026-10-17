@@ -259,7 +259,7 @@ export function Dashboard({
                     {r.released_name ? (
                       <span
                         className={adminNameClass(r.released_role)}
-                        title={r.released_role || undefined}
+                        title={`Equipment issued by ${r.released_name}`}
                       >
                         {r.released_name}
                       </span>
@@ -271,7 +271,7 @@ export function Dashboard({
                     {r.received_name ? (
                       <span
                         className={adminNameClass(r.received_role)}
-                        title={r.received_role || undefined}
+                        title={`Equipment received by ${r.received_name}`}
                       >
                         {r.received_name}
                       </span>
@@ -326,6 +326,7 @@ export function Dashboard({
       {modal === "qr" && (
         <Modal
           title="Borrower Form Access QR Code"
+          titleCentered
           onClose={() => setModal("")}
         >
           <img alt="Borrower form QR code" src={qr} className="mx-auto" />
@@ -339,7 +340,7 @@ export function Dashboard({
             value={window.location.origin + "/"}
           />
           <button
-            className="btn-primary"
+            className="btn-primary block ml-auto"
             onClick={() =>
               navigator.clipboard
                 .writeText(window.location.origin + "/")

@@ -8,6 +8,7 @@ export function Modal({
   centered = false,
   titleCentered = false,
   expanded = false,
+  frosted = false,
 }: {
   title: string;
   onClose: () => void;
@@ -16,6 +17,7 @@ export function Modal({
   centered?: boolean;
   titleCentered?: boolean;
   expanded?: boolean;
+  frosted?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -31,7 +33,7 @@ export function Modal({
   // Keep dialogs outside fieldsets, clipped containers and backdrop-filter ancestors.
   return createPortal(
     <div
-      className="mobile-modal fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+      className={`mobile-modal fixed inset-0 z-50 flex items-center justify-center ${frosted ? "bg-slate-900/30" : "bg-slate-900/60 backdrop-blur-sm"} p-4`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -65,9 +67,9 @@ export function Modal({
             }
           }
         }}
-        className={`bg-white rounded-2xl shadow-2xl ${expanded ? "max-w-[1440px]" : wide ? "max-w-5xl" : "max-w-md"} w-full overflow-hidden border border-slate-100 max-h-[90dvh] flex flex-col`}
+        className={`${frosted ? "frosted-modal bg-slate-900/20 border-white/20" : "bg-white border-slate-100"} rounded-2xl shadow-2xl ${expanded ? "max-w-[1440px]" : wide ? "max-w-5xl" : "max-w-md"} w-full overflow-hidden border max-h-[90dvh] flex flex-col`}
       >
-        <div className="relative bg-slate-900 px-6 py-4 text-white flex justify-between items-center shrink-0">
+        <div className={`relative ${frosted ? "bg-slate-900/20" : "bg-slate-900"} px-6 py-4 text-white flex justify-between items-center shrink-0`}>
           <h3
             className={`font-bold text-base ${centered || titleCentered ? "w-full text-center px-5" : ""}`}
           >

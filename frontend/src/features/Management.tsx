@@ -405,7 +405,7 @@ export function Accounts({
                 </td>
                 {developer && (
                   <td data-label="Status">
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title="Online: recent activity. Idle: no activity for 5 minutes. Offline: no heartbeat for 90 seconds or no valid session.">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title={presence[user.id] === "Online" ? "This user is currently using the app." : presence[user.id] === "Idle" ? "This user is signed in but has not used the app for a while." : presence[user.id] === "Offline" ? "This user is signed out or may have lost their connection." : "We can’t check this user’s status right now."}>
                       <span aria-hidden="true" className={`h-2 w-2 rounded-full ${presence[user.id] === "Online" ? "bg-emerald-500" : presence[user.id] === "Idle" ? "bg-amber-500" : presence[user.id] === "Offline" ? "bg-rose-500" : "bg-slate-300"}`} />
                       {presence[user.id] || "Unknown"}
                     </span>

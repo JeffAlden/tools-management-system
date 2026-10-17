@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Toaster } from "./components/Toaster";
-import { api, session } from "./services/api";
+import { api, ApiError, session } from "./services/api";
 import { notify } from "./services/notifications";
 import { Modal } from "./components/Modal";
 import { BorrowerForm } from "./features/BorrowerForm";
@@ -16,27 +16,55 @@ export default function App() {
     ),
     [modal, setModal] = useState(""),
     [ready, setReady] = useState(false),
+    [showLoginPassword, setShowLoginPassword] = useState(false),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (modal !== "login") setShowLoginPassword(false);
+  }, [modal]);
+  const connectionRequest = useRef<ReturnType<typeof session> | null>(null);
+  const checkConnection = useCallback(() => {
+    // Share startup/retry/sign-in checks so their CSRF responses cannot race.
+    connectionRequest.current ??= session()
+      .catch((error) => {
+        // A local reverse proxy can return an empty error response when the
+        // backend is down. Keep meaningful server errors; clarify only fallback text.
+        if (error instanceof ApiError && error.message === "Request failed.") {
+          throw new ApiError(error.status, "Please check your internet connection and try again.");
+        }
+        throw error;
+      })
+      .finally(() => {
+        connectionRequest.current = null;
+      });
+    return connectionRequest.current;
+  }, []);
   useEffect(() => {
     sessionStorage.setItem("tms-tab", tab);
   }, [tab]);
   useEffect(() => {
+    if (ready) return;
     let active = true;
+    let notified = false;
     let retryTimer: ReturnType<typeof setTimeout>;
-    function connect() {
-      session()
-      .then((s) => {
+    async function connect() {
+      try {
+        const s = await checkConnection();
         if (!active) return;
         setUser(s.user);
         setReady(true);
-      })
-      .catch(() => {
-        if (active) retryTimer = setTimeout(connect, 3000);
-      });
+      } catch (error) {
+        if (!active) return;
+        const message = (error as Error).message;
+        if (!notified) {
+          notify(message);
+          notified = true;
+        }
+        retryTimer = setTimeout(connect, 3000);
+      }
     }
     connect();
     return () => { active = false; clearTimeout(retryTimer); };
-  }, []);
+  }, [ready, checkConnection]);
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -98,6 +126,11 @@ export default function App() {
     const values = new FormData(e.currentTarget);
     setBusy(true);
     try {
+      if (!ready) {
+        // Establish the session/CSRF token before login after an outage.
+        await checkConnection();
+        setReady(true);
+      }
       const result = await api<{ user: User }>("/auth/login", {
         method: "POST",
         body: JSON.stringify(Object.fromEntries(values)),
@@ -173,8 +206,8 @@ export default function App() {
                 <button
                   onClick={() => setModal("password")}
                   className={`nav-button whitespace-normal break-words text-left ${user.role === "Developer" ? "text-purple-300" : user.role === "Admin" ? "text-amber-300" : "text-emerald-300"}`}
-                  title={`${user.role} — Change password`}
-                  aria-label={`${user.name}, ${user.role}. Change password`}
+                  title="Change your password"
+                  aria-label={`${user.name}. Change your password`}
                 >
                   {user.name}
                 </button>
@@ -192,24 +225,6 @@ export default function App() {
         </div>
       </header>
       <main className="responsive-main max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
-        {!ready && (
-          <div className="bg-white rounded-xl p-3 mb-4 text-xs" role="status">
-            Connecting to the server…{" "}
-            <button
-              className="text-indigo-600"
-              onClick={() =>
-                session()
-                  .then((s) => {
-                    setUser(s.user);
-                    setReady(true);
-                  })
-                  .catch((e) => notify(e.message))
-              }
-            >
-              Retry
-            </button>
-          </div>
-        )}
         {tab === "borrower" ? (
           <BorrowerForm
             notify={notify}
@@ -218,7 +233,7 @@ export default function App() {
         ) : user ? (
           <Dashboard key={user.id} user={user} notify={notify} />
         ) : (
-          <div className="bg-slate-900/20 backdrop-blur-sm border border-white/20 rounded-2xl p-8 text-center max-w-lg mx-auto shadow-2xl">
+          <div hidden={modal === "login"} className="auth-access-card bg-slate-900/10 border border-white/20 rounded-2xl p-8 text-center max-w-lg mx-auto shadow-lg">
             <i className="fas fa-user-lock text-amber-400 text-3xl mb-3" />
             <h3 className="font-bold text-white text-base">
               Authentication Required
@@ -237,30 +252,50 @@ export default function App() {
         © Copyright 2026
       </footer>
       {modal === "login" && (
-        <Modal title="Portal Sign In" titleCentered onClose={() => setModal("")}>
-          <form onSubmit={login} className="space-y-4">
+        <Modal
+          title="Portal Sign In"
+          titleCentered
+          frosted
+          onClose={() => setModal("")}
+        >
+          <form onSubmit={login} className="space-y-4 w-full max-w-xs mx-auto">
             <label className="field-label">
               Username
+              <span className="login-input-surface block mt-1">
               <input
-                className="input mt-1"
+                className="input"
                 name="username"
                 required
                 autoComplete="username"
                 maxLength={64}
               />
+              </span>
             </label>
-            <label className="field-label">
-              Password
-              <input
-                className="input mt-1"
-                name="password"
-                required
-                type="password"
-                autoComplete="current-password"
-                maxLength={128}
-              />
-            </label>
-            <button className="btn-primary w-full" disabled={busy || !ready}>
+            <div>
+              <label className="field-label" htmlFor="sign-in-password">Password</label>
+              <div className="login-input-surface relative mt-1">
+                <input
+                  id="sign-in-password"
+                  className="input pr-10"
+                  name="password"
+                  required
+                  type={showLoginPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  maxLength={128}
+                />
+                <button
+                  type="button"
+                  aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showLoginPassword}
+                  aria-controls="sign-in-password"
+                  className="absolute inset-y-0 right-0 w-10 flex items-center justify-center text-slate-500 hover:text-indigo-600 focus-visible:outline-2 focus-visible:outline-indigo-600 rounded-r-lg"
+                  onClick={() => setShowLoginPassword((visible) => !visible)}
+                >
+                  <i className={`fas ${showLoginPassword ? "fa-eye-slash" : "fa-eye"}`} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+            <button className="btn-primary block mx-auto" disabled={busy}>
               {busy ? "Signing in…" : "Sign In"}
             </button>
           </form>

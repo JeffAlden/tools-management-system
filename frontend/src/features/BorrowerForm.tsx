@@ -25,8 +25,7 @@ export function BorrowerForm({
     [photo, setPhoto] = useState<Blob | null>(null),
     [signature, setSignature] = useState<Blob | null>(null),
     [revision, setRevision] = useState(0),
-    [busy, setBusy] = useState(false),
-    [reference, setReference] = useState("Assigned on submit");
+    [busy, setBusy] = useState(false);
   function reset() {
     setName("");
     setPosition("");
@@ -59,7 +58,6 @@ export function BorrowerForm({
         ),
       });
       reset();
-      setReference(request.reference);
       notify(`Borrow request submitted successfully! ${request.reference}`, "success");
       onSubmitted();
     } catch (error) {
@@ -97,14 +95,6 @@ export function BorrowerForm({
                 Please fill in borrower information and tool items required for
                 deployment.
               </p>
-            </div>
-            <div className="text-right shrink-0 max-w-[180px]">
-              <span className="text-xs font-mono bg-white/10 px-3 py-1 rounded-lg border border-white/10 block font-semibold text-indigo-200 break-all">
-                {reference}
-              </span>
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                Form Reference ID
-              </span>
             </div>
           </div>
         </div>
