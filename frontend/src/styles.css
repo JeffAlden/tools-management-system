@@ -82,6 +82,44 @@
 @media (prefers-reduced-motion: reduce) {
   .app-toast { transition-duration: 0.01ms; }
 }
+.account-actions .btn-secondary { white-space: nowrap; }
+@media (max-width: 640px) {
+  .account-control-table,
+  .account-control-table tbody { display: block; }
+  .account-control-table thead { display: none; }
+  .account-control-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .account-control-table td {
+    display: block;
+    min-width: 0;
+    padding: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+  .account-control-table td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+  .account-control-table td[data-label="Username"],
+  .account-control-table td[data-label="Name"],
+  .account-control-table td[data-label="Role"],
+  .account-control-table td[data-label="Account Actions"] { grid-column: 1 / -1; }
+  .account-control-table td[data-label="Username"] { background: #f8fafc; font-weight: 600; }
+  .account-control-table td[data-label="Account Actions"] { border-bottom: none; }
+  .account-control-table .input { min-height: 2.5rem; }
+  .account-actions { align-items: stretch; }
+  .account-actions .btn-secondary { flex: 1 1 auto; min-height: 2.5rem; margin: 0; }
+}
 /* Retain the original Tailwind 3 palette while using the maintained compiler. */
 @theme {
   --color-indigo-50: #eef2ff;

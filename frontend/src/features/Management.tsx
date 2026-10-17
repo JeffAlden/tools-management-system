@@ -346,11 +346,11 @@ export function Accounts({
           <tbody>
             {users.map((user, index) => (
               <tr key={user.id}>
-                <td>
+                <td data-label="Username">
                   {user.username}
                   {user.id === current.id ? " (You)" : ""}
                 </td>
-                <td>
+                <td data-label="Name">
                   <input
                     className="input"
                     disabled={!developer}
@@ -365,7 +365,7 @@ export function Accounts({
                     }
                   />
                 </td>
-                <td>
+                <td data-label="Role">
                   <select
                     className="input"
                     disabled={!developer || user.id === current.id}
@@ -386,7 +386,7 @@ export function Accounts({
                     <option>User</option>
                   </select>
                 </td>
-                <td>
+                <td data-label="Active">
                   <input
                     type="checkbox"
                     aria-label={`Active account ${user.username}`}
@@ -404,14 +404,15 @@ export function Accounts({
                   />
                 </td>
                 {developer && (
-                  <td>
+                  <td data-label="Status">
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap" title="Online: recent activity. Idle: no activity for 5 minutes. Offline: no heartbeat for 90 seconds or no valid session.">
                       <span aria-hidden="true" className={`h-2 w-2 rounded-full ${presence[user.id] === "Online" ? "bg-emerald-500" : presence[user.id] === "Idle" ? "bg-amber-500" : presence[user.id] === "Offline" ? "bg-rose-500" : "bg-slate-300"}`} />
                       {presence[user.id] || "Unknown"}
                     </span>
                   </td>
                 )}
-                <td>
+                <td data-label="Account Actions">
+                  <div className="account-actions flex flex-wrap justify-center gap-2">
                   {developer && (
                     <button
                       className="btn-secondary"
@@ -424,7 +425,7 @@ export function Accounts({
                   {((developer && user.id !== current.id) ||
                     (!developer && user.role !== "Developer")) && (
                     <button
-                      className="btn-secondary ml-1"
+                      className="btn-secondary"
                       onClick={() => {
                         setTarget(user);
                         setNewPassword("");
@@ -437,7 +438,7 @@ export function Accounts({
                     user.role !== "Developer" &&
                     (developer || user.role === "User") && (
                       <button
-                        className="btn-secondary ml-1"
+                        className="btn-secondary"
                         disabled={busy}
                         onClick={async () => {
                           if (
@@ -463,6 +464,7 @@ export function Accounts({
                         Delete
                       </button>
                     )}
+                  </div>
                 </td>
               </tr>
             ))}
