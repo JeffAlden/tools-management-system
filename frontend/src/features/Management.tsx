@@ -7,7 +7,7 @@ export function Catalog({
   notify,
 }: {
   onClose: () => void;
-  notify: (message: string) => void;
+  notify: (message: string, kind?: "success" | "error" | "info") => void;
 }) {
   const [tools, setTools] = useState<Tool[]>([]),
     [edit, setEdit] = useState<Tool | null>(null),
@@ -35,7 +35,7 @@ export function Catalog({
       setName("");
       setQty(0);
       await reload();
-      notify("Catalog saved.");
+      notify("Catalog saved.", "success");
     } catch (e) {
       notify((e as Error).message);
     } finally {
@@ -57,7 +57,7 @@ export function Catalog({
         body: JSON.stringify({ tools: input }),
       });
       await reload();
-      notify("Catalog imported; existing codes updated and new codes added.");
+      notify("Catalog imported; existing codes updated and new codes added.", "success");
     } catch (e) {
       notify((e as Error).message);
     } finally {
@@ -202,7 +202,7 @@ export function Accounts({
 }: {
   current: User;
   onClose: () => void;
-  notify: (message: string) => void;
+  notify: (message: string, kind?: "success" | "error" | "info") => void;
 }) {
   const developer = current.role === "Developer";
   const [presence, setPresence] = useState<Record<string, "Online" | "Offline" | "Idle">>({});
@@ -246,7 +246,7 @@ export function Accounts({
       });
       form.reset();
       await reload();
-      notify("Account created.");
+      notify("Account created.", "success");
     } catch (e) {
       notify((e as Error).message);
     } finally {
@@ -265,7 +265,7 @@ export function Accounts({
         }),
       });
       await reload();
-      notify("Account updated; its previous sessions were revoked.");
+      notify("Account updated. This user has been signed out.", "success");
     } catch (e) {
       notify((e as Error).message);
     } finally {
@@ -452,7 +452,7 @@ export function Accounts({
                               method: "DELETE",
                             });
                             await reload();
-                            notify("Account deleted; sessions revoked.");
+                            notify("Account deleted. This user has been signed out.", "success");
                           } catch (e) {
                             notify((e as Error).message);
                           } finally {
@@ -480,7 +480,7 @@ export function Accounts({
                 body: JSON.stringify({ newPassword }),
               });
               setTarget(null);
-              notify("Password reset; sessions revoked.");
+              notify("Password reset. This user must sign in again.", "success");
             } catch (e) {
               notify((e as Error).message);
             } finally {

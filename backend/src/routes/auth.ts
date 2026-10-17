@@ -55,7 +55,7 @@ authRouter.post("/logout", authenticated, async (req, res) => {
     await db.execute("DELETE FROM sessions WHERE token_hash=?", [
       req.session!.hash,
     ]);
-    await audit(db, req.user!, "Logout", "Session revoked.");
+    await audit(db, req.user!, "Logout", "User signed out.");
   });
   res.json({ user: null, csrf: await createSession(res, null) });
 });
@@ -98,7 +98,7 @@ authRouter.post("/password", authenticated, loginLimiter, async (req, res) => {
       db,
       req.user!,
       "Password changed",
-      "All previous sessions revoked.",
+      "User signed out of all previous sign-ins.",
     );
     return createSession(res, req.user!.id, db);
   });

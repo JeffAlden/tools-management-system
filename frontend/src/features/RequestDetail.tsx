@@ -17,7 +17,7 @@ export function RequestDetail({
   user: User;
   onClose: () => void;
   onSaved: () => void;
-  notify: (msg: string) => void;
+  notify: (msg: string, kind?: "success" | "error" | "info") => void;
 }) {
   const [items, setItems] = useState(
       request.items.map((i) => ({
@@ -51,6 +51,7 @@ export function RequestDetail({
       });
       notify(
         pending ? "Tools issued to borrower." : "Return inspection saved.",
+        "success",
       );
       onSaved();
       onClose();
@@ -181,7 +182,9 @@ export function RequestDetail({
                       "Returned",
                       "Not working",
                     ].map((s) => (
-                      <option key={s}>{s}</option>
+                      <option key={s} value={s}>
+                        {s === "partial return" ? "Partial return" : s}
+                      </option>
                     ))}
                   </select>
                 </td>
@@ -261,7 +264,7 @@ export function RequestDetail({
         </fieldset>
       )}
       <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t">
-        <button className="btn-secondary" onClick={onClose}>
+        <button className={`btn-secondary ${request.status === "Completed" ? "order-last" : ""}`} onClick={onClose}>
           Close
         </button>
         {allowed && (pending || issued) ? (

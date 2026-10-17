@@ -14,7 +14,7 @@ export function BorrowerForm({
   notify,
   onSubmitted,
 }: {
-  notify: (msg: string) => void;
+  notify: (msg: string, kind?: "success" | "error" | "info") => void;
   onSubmitted: () => void;
 }) {
   const [name, setName] = useState(""),
@@ -60,7 +60,7 @@ export function BorrowerForm({
       });
       reset();
       setReference(request.reference);
-      notify(`Borrow request submitted successfully! ${request.reference}`);
+      notify(`Borrow request submitted successfully! ${request.reference}`, "success");
       onSubmitted();
     } catch (error) {
       notify((error as Error).message);

@@ -9,7 +9,7 @@ export function Photo({
   value: Blob | null;
   onChange: (file: Blob | null) => void;
   label: string;
-  notify: (message: string) => void;
+  notify: (message: string, kind?: "success" | "error" | "info") => void;
 }) {
   const [preview, setPreview] = useState(""),
     [camera, setCamera] = useState(false);
@@ -113,7 +113,7 @@ function Camera({
 }: {
   onClose: () => void;
   onCapture: (blob: Blob) => void;
-  notify: (message: string) => void;
+  notify: (message: string, kind?: "success" | "error" | "info") => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const [ready, setReady] = useState(false);

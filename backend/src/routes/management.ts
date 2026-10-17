@@ -215,7 +215,7 @@ usersRouter.post("/:id/password", async (req, res) => {
       db,
       req.user!,
       "Password reset",
-      `Account ${userId}; sessions revoked.`,
+      `Account ${userId}; user signed out.`,
     );
   });
   res.json({ ok: true });

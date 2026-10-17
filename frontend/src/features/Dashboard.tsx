@@ -21,7 +21,7 @@ export function Dashboard({
   notify,
 }: {
   user: User;
-  notify: (message: string) => void;
+  notify: (message: string, kind?: "success" | "error" | "info") => void;
 }) {
   const [requests, setRequests] = useState<BorrowRequest[]>([]),
     [counts, setCounts] = useState<Record<string, number>>({}),
@@ -343,7 +343,7 @@ export function Dashboard({
             onClick={() =>
               navigator.clipboard
                 .writeText(window.location.origin + "/")
-                .then(() => notify("Borrower link copied."))
+                .then(() => notify("Borrower link copied.", "success"))
                 .catch(() => notify("Select and copy the link."))
             }
           >

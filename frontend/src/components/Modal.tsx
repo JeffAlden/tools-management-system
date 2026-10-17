@@ -6,6 +6,7 @@ export function Modal({
   children,
   wide = false,
   centered = false,
+  titleCentered = false,
   expanded = false,
 }: {
   title: string;
@@ -13,6 +14,7 @@ export function Modal({
   children: ReactNode;
   wide?: boolean;
   centered?: boolean;
+  titleCentered?: boolean;
   expanded?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -67,7 +69,7 @@ export function Modal({
       >
         <div className="relative bg-slate-900 px-6 py-4 text-white flex justify-between items-center shrink-0">
           <h3
-            className={`font-bold text-base ${centered ? "w-full text-center px-5" : ""}`}
+            className={`font-bold text-base ${centered || titleCentered ? "w-full text-center px-5" : ""}`}
           >
             {title}
           </h3>
@@ -75,7 +77,7 @@ export function Modal({
             type="button"
             aria-label="Close dialog"
             onClick={onClose}
-            className={`text-slate-400 hover:text-white ${centered ? "absolute right-6" : ""}`}
+            className={`text-slate-400 hover:text-white ${centered || titleCentered ? "absolute right-6" : ""}`}
           >
             <i className="fas fa-times" />
           </button>

@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Toaster } from "./components/Toaster";
 import { api, session } from "./services/api";
+import { notify } from "./services/notifications";
 import { Modal } from "./components/Modal";
 import { BorrowerForm } from "./features/BorrowerForm";
 import { Dashboard } from "./features/Dashboard";
@@ -13,7 +15,6 @@ export default function App() {
         : "borrower",
     ),
     [modal, setModal] = useState(""),
-    [message, setMessage] = useState(""),
     [ready, setReady] = useState(false),
     [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -49,7 +50,7 @@ export default function App() {
           setUser(null);
           setTab("borrower");
           setModal("");
-          setMessage("Your session ended. Please sign in again.");
+          notify("Your session ended. Please sign in again.");
         }
       } catch {
         // A temporary connection failure does not establish that a session ended.
@@ -92,11 +93,6 @@ export default function App() {
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [user?.id]);
-  useEffect(() => {
-    if (!message) return;
-    const timer = setTimeout(() => setMessage(""), 10000);
-    return () => clearTimeout(timer);
-  }, [message]);
   async function login(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const values = new FormData(e.currentTarget);
@@ -108,9 +104,9 @@ export default function App() {
       });
       setUser(result.user);
       setModal("");
-      setMessage(`Welcome back ${result.user.name}!`);
+      notify(`Welcome back ${result.user.name}!`, "success");
     } catch (e) {
-      setMessage((e as Error).message);
+      notify((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -121,13 +117,14 @@ export default function App() {
       setUser(null);
       setTab("borrower");
       setModal("");
-      setMessage("Logged out.");
+      notify("Logged out.", "info");
     } catch (e) {
-      setMessage((e as Error).message);
+      notify((e as Error).message);
     }
   }
   return (
     <div className="min-h-screen flex flex-col">
+      <Toaster />
       <header className="app-header text-white shadow-lg sticky top-0 z-30 bg-[#002366]">
         <div className="nav-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <img
@@ -206,7 +203,7 @@ export default function App() {
                     setUser(s.user);
                     setReady(true);
                   })
-                  .catch((e) => setMessage(e.message))
+                  .catch((e) => notify(e.message))
               }
             >
               Retry
@@ -215,11 +212,11 @@ export default function App() {
         )}
         {tab === "borrower" ? (
           <BorrowerForm
-            notify={setMessage}
+            notify={notify}
             onSubmitted={() => {}}
           />
         ) : user ? (
-          <Dashboard key={user.id} user={user} notify={setMessage} />
+          <Dashboard key={user.id} user={user} notify={notify} />
         ) : (
           <div className="bg-slate-900/20 backdrop-blur-sm border border-white/20 rounded-2xl p-8 text-center max-w-lg mx-auto shadow-2xl">
             <i className="fas fa-user-lock text-amber-400 text-3xl mb-3" />
@@ -239,22 +236,8 @@ export default function App() {
       <footer className="mt-auto py-4 text-center text-xs font-medium text-white bg-[#002366]">
         © Copyright 2026
       </footer>
-      {message && (
-        <div
-          role="status"
-          className="fixed bottom-5 right-5 left-5 sm:left-auto z-[100] bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs border border-slate-700 max-w-xl flex gap-3"
-        >
-          <span className="break-words">{message}</span>
-          <button
-            aria-label="Dismiss notification"
-            onClick={() => setMessage("")}
-          >
-            ×
-          </button>
-        </div>
-      )}
       {modal === "login" && (
-        <Modal title="Portal Sign In" onClose={() => setModal("")}>
+        <Modal title="Portal Sign In" titleCentered onClose={() => setModal("")}>
           <form onSubmit={login} className="space-y-4">
             <label className="field-label">
               Username
@@ -286,12 +269,12 @@ export default function App() {
       {modal === "users" && user && user.role !== "User" && (
         <Accounts
           current={user}
-          notify={setMessage}
+          notify={notify}
           onClose={() => setModal("")}
         />
       )}{" "}
       {modal === "password" && user && (
-        <Modal title="Change Password" onClose={() => setModal("")}>
+        <Modal title="Change Password" titleCentered onClose={() => setModal("")}>
           <form
             className="space-y-3"
             onSubmit={async (e) => {
@@ -304,9 +287,9 @@ export default function App() {
                   body: JSON.stringify(Object.fromEntries(values)),
                 });
                 setModal("");
-                setMessage("Password changed; other sessions revoked.");
+                notify("Password changed. Please sign in again on any other devices.", "success");
               } catch (e) {
-                setMessage((e as Error).message);
+                notify((e as Error).message);
               } finally {
                 setBusy(false);
               }
@@ -337,9 +320,11 @@ export default function App() {
             <p className="text-xs text-slate-500">
               12–128 characters with uppercase, lowercase, number and symbol.
             </p>
-            <button className="btn-primary" disabled={busy}>
-              Change Password
-            </button>
+            <div className="flex justify-end">
+              <button className="btn-primary" disabled={busy}>
+                Change Password
+              </button>
+            </div>
           </form>
         </Modal>
       )}
